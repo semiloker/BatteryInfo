@@ -9,7 +9,7 @@ bool win_bi::Register()
     WNDCLASSEX wc = {};
     wc.cbSize = sizeof(WNDCLASSEX);
     wc.style = 0;
-    wc.lpfnWndProc = WndProc;
+    wc.lpfnWndProc = win_bi::WndProc;
     wc.cbClsExtra = 0;
     wc.cbWndExtra = 0;
     wc.hInstance = hInstance;
@@ -81,42 +81,42 @@ LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
     switch (msg) 
     {
-        case WM_COMMAND:    pThis->OnCommand(wParam); break;
-        case WM_GETMINMAXINFO: pThis->OnGetMinMaxInfo(lParam); break;
-        case WM_CREATE:     pThis->OnCreate(hwnd); break;
-        case WM_SIZE:       pThis->OnResize(); break;
-        case WM_PAINT: 
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-            RECT rect;
-            GetClientRect(hwnd, &rect);
-            DrawTextA(hdc, pThis->displayText.c_str(), -1, &rect, DT_LEFT | DT_TOP | DT_WORDBREAK);
-            EndPaint(hwnd, &ps);
-            break;
-        }
-        case WM_TIMER:
-            pThis->UpdateBatteryText();
-            InvalidateRect(hwnd, NULL, TRUE);
-            break;
-        case WM_CLOSE:      DestroyWindow(hwnd); break;
-        case WM_DESTROY:    pThis->OnDestroy(); break;
-        default:            return DefWindowProc(hwnd, msg, wParam, lParam);
+        case WM_COMMAND:          pThis->OnCommand(wParam); break;
+        case WM_GETMINMAXINFO:    pThis->OnGetMinMaxInfo(lParam); break;
+        case WM_CREATE:           pThis->OnCreate(hwnd); break;
+        case WM_SIZE:             pThis->OnResize(); break;
+        case WM_PAINT:            pThis->OnPaint(hwnd); break;
+        case WM_KEYDOWN:          pThis->OnKeyDown(wParam); break;
+        case WM_KEYUP:            pThis->OnKeyUp(wParam); break;
+        case WM_MOUSEMOVE:        pThis->OnMouseMove(wParam, lParam); break;
+        case WM_LBUTTONDOWN:      pThis->OnLeftButtonDown(wParam, lParam); break;
+        case WM_RBUTTONDOWN:      pThis->OnRightButtonDown(wParam, lParam); break;
+        case WM_TIMER:            pThis->OnTimer(wParam); break;
+        case WM_SETFOCUS:         pThis->OnSetFocus(hwnd); break;
+        case WM_KILLFOCUS:        pThis->OnKillFocus(hwnd); break;
+        case WM_SYSCOMMAND:       pThis->OnSysCommand(wParam, lParam); break;
+        case WM_CHAR:             pThis->OnChar(wParam); break;
+        case WM_CLOSE:          
+            OutputDebugString("WM_CLOSE received\n");
+            DestroyWindow(hwnd); 
+        break;
+        case WM_DESTROY:
+            OutputDebugString("WM_DESTROY received\n");
+            pThis->OnDestroy(); 
+        break;
+        default:                  return DefWindowProc(hwnd, msg, wParam, lParam);
     }
     return 0;
 }
 
+void win_bi::OnPaint(HWND hwnd)
+{
+
+}
+
 void win_bi::OnCreate(HWND hwnd) 
 {
-    if (battery.Init())
-    {
-        UpdateBatteryText();
-        SetTimer(hwnd, 1, 5000, NULL); // оновлення кожні 5 сек
-    } 
-    else 
-    {
-        displayText = "Battery initialization failed.";
-    }
+    
 }
 void win_bi::OnCommand(WPARAM wParam)
 {
@@ -128,9 +128,55 @@ void win_bi::OnResize()
 
 }
 
-void win_bi::OnKeydown(WPARAM wParam)
+void win_bi::OnKeyDown(WPARAM wParam)
+{
+    if (wParam == VK_ESCAPE)
+        SendMessage(hwnd, WM_CLOSE, 0, 0);
+}
+
+void win_bi::OnKeyUp(WPARAM wParam)
 {
 
+}
+
+void win_bi::OnMouseMove(WPARAM wParam, LPARAM lParam)
+{
+
+}
+
+void win_bi::OnLeftButtonDown(WPARAM wParam, LPARAM lParam)
+{
+
+}
+
+void win_bi::OnRightButtonDown(WPARAM wParam, LPARAM lParam)
+{
+
+}
+
+void win_bi::OnTimer(WPARAM wParam)
+{
+
+}
+
+void win_bi::OnSetFocus(HWND hwnd)
+{
+
+}
+
+void win_bi::OnKillFocus(HWND hwnd)
+{
+
+}
+
+void win_bi::OnSysCommand(WPARAM wParam, LPARAM lParam)
+{
+    DefWindowProc(hwnd, WM_SYSCOMMAND, wParam, lParam);
+}
+
+void win_bi::OnChar(WPARAM wParam)
+{
+    
 }
 
 void win_bi::OnGetMinMaxInfo(LPARAM lParam) 
@@ -140,18 +186,8 @@ void win_bi::OnGetMinMaxInfo(LPARAM lParam)
     mmi->ptMinTrackSize.y = 350;
 }
 
-void win_bi::UpdateBatteryText() 
-{
-    std::ostringstream oss;
-    oss << battery.GetBatteryInfoText() << "\n";
-    oss << battery.GetBatteryStatusText();
-    displayText = oss.str();
-}
-
 void win_bi::OnDestroy() 
 {
-    KillTimer(hwnd, 1);
-
     PostQuitMessage(0);
 }
 
