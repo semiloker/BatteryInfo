@@ -2,15 +2,23 @@
 #define MAIN_H
 
 #include <windows.h>
+#include <shellapi.h>
 #include <string>
+
+#include "../include/BatteryInfo.h"
 
 class win_bi
 {
 public:
     win_bi(HINSTANCE hInstance);
     ~win_bi() = default;
+    
     bool Register();
     bool Create(int nCmdShow);
+
+    void AddTrayIcon();
+    void RemoveTrayIcon();
+
     WPARAM RunMessageLoop();
 
 private:
@@ -35,9 +43,12 @@ private:
     void OnDestroy();
 
     static const char szClassName[];
-
+    
+    NOTIFYICONDATA nid;
     HINSTANCE hInstance;
     HWND hwnd;
+
+    batteryinfo_bi* bi_bi;
 };
 
 #endif

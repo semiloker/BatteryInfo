@@ -1,6 +1,6 @@
 TARGET = bin\battery.exe
 CC = g++
-CFLAGS = -Wall -static-libgcc -static-libstdc++
+CFLAGS = -Wall -lgdi32 -lshell32 -mwindows -static-libgcc -static-libstdc++
 SRC_DIR = src
 INCLUDE_DIR = include
 OBJ_DIR = obj

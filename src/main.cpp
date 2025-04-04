@@ -25,6 +25,8 @@ bool win_bi::Register()
 
 bool win_bi::Create(int nCmdShow) 
 {
+    bi_bi = new batteryinfo_bi();
+
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     int windowWidth = 500;
@@ -84,7 +86,15 @@ LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         case WM_COMMAND:          pThis->OnCommand(wParam); break;
         case WM_GETMINMAXINFO:    pThis->OnGetMinMaxInfo(lParam); break;
         case WM_CREATE:           pThis->OnCreate(hwnd); break;
-        case WM_SIZE:             pThis->OnResize(); break;
+        case WM_SIZE:             
+            pThis->OnResize(); 
+
+            if (wParam == SIZE_MINIMIZED)
+            {
+                ShowWindow(hwnd, SW_HIDE);
+                pThis->AddTrayIcon();
+            }
+        break;
         case WM_PAINT:            pThis->OnPaint(hwnd); break;
         case WM_KEYDOWN:          pThis->OnKeyDown(wParam); break;
         case WM_KEYUP:            pThis->OnKeyUp(wParam); break;
@@ -100,6 +110,14 @@ LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
             OutputDebugString("WM_CLOSE received\n");
             DestroyWindow(hwnd); 
         break;
+        case WM_USER + 1:
+            if (lParam == WM_LBUTTONDBLCLK) 
+            {
+                ShowWindow(hwnd, SW_RESTORE);
+                SetForegroundWindow(hwnd);
+                pThis->RemoveTrayIcon();
+            }
+        break;
         case WM_DESTROY:
             OutputDebugString("WM_DESTROY received\n");
             pThis->OnDestroy(); 
@@ -111,7 +129,35 @@ LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
 void win_bi::OnPaint(HWND hwnd)
 {
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hwnd, &ps);
+    bi_bi->PrintAllWin(hdc);
+    EndPaint(hwnd, &ps);
+}
 
+void win_bi::AddTrayIcon() 
+{
+    ZeroMemory(&nid, sizeof(NOTIFYICONDATA));
+    nid.cbSize = sizeof(NOTIFYICONDATA);
+    nid.hWnd = hwnd;
+    nid.uID = 1;
+    nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    nid.uCallbackMessage = WM_USER + 1;
+    nid.hIcon = LoadIcon(NULL, IDI_INFORMATION);
+
+    std::string tooltip = 
+        "Power State: " + bi_bi->info.PowerState + "\n" +
+        "Charge: " + bi_bi->info.ChargeLevel + "\n" +
+        "Voltage: " + bi_bi->info.Voltage;
+
+    strncpy_s(nid.szTip, tooltip.c_str(), sizeof(nid.szTip) - 1);
+
+    Shell_NotifyIcon(NIM_ADD, &nid);
+}
+
+void win_bi::RemoveTrayIcon() 
+{
+    Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
 void win_bi::OnCreate(HWND hwnd) 
@@ -188,6 +234,7 @@ void win_bi::OnGetMinMaxInfo(LPARAM lParam)
 
 void win_bi::OnDestroy() 
 {
+    RemoveTrayIcon();
     PostQuitMessage(0);
 }
 

@@ -2,6 +2,8 @@
 #define BATTERYINFO_H
 
 #include <windows.h>
+#include <iostream>
+#include <vector>
 #include <initguid.h>
 #include <setupapi.h>
 #include <batclass.h>
@@ -16,16 +18,47 @@ DEFINE_GUID(GUID_DEVINTERFACE_BATTERY,
 
 class batteryinfo_bi
 {
+private:
+    HDEVINFO hDevInfo;
+    HANDLE hBattery;
+    BATTERY_INFORMATION bi{};
+    BATTERY_STATUS bs{};
+    ULONG tag;
+
 public:
-    struct bi_struct // battery info (bi) _ struct
+    struct bi_struct 
     {
         std::string Chemistry;
         std::string DesignedCapacity;
         std::string FullChargedCapacity;
         std::string DefaultAlert1;
         std::string DefaultAlert2;
+        std::string WearLevel;
+        std::string Voltage;
+        std::string Rate;
+        std::string PowerState;
+        std::string RemainingCapacity;
+        std::string ChargeLevel;
     };
 
+    bi_struct info;
+
+    batteryinfo_bi() : hDevInfo(INVALID_HANDLE_VALUE), hBattery(INVALID_HANDLE_VALUE), tag(0) {}
+
+    ~batteryinfo_bi() 
+    {
+        if (hBattery != INVALID_HANDLE_VALUE)
+            CloseHandle(hBattery);
+        if (hDevInfo != INVALID_HANDLE_VALUE)
+            SetupDiDestroyDeviceInfoList(hDevInfo);
+    }
+
+    bool Initialize();
+    bool QueryTag();
+    bool QueryBatteryInfo();
+    bool QueryBatteryStatus();
+    void PrintAllConsole() const;
+    void PrintAllWin(HDC hdc, int startX = 10, int startY = 10, int lineHeight = 20);
 };
 
 #endif
