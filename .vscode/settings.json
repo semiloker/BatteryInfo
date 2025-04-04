@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "comdef.h": "c",
-        "wbemidl.h": "c",
-        "stdio.h": "c",
-        "windows.h": "c"
-    }
-}
