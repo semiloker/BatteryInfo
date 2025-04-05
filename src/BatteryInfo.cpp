@@ -61,12 +61,16 @@ bool batteryinfo_bi::QueryBatteryInfo()
                          &bqi, sizeof(bqi), &bi, sizeof(bi), &bytesReturned, NULL))
         return false;
 
-        // writing to struct
+    // writing to struct
     info.Chemistry = std::string((char*)bi.Chemistry, 4);
-    info.DesignedCapacity = std::to_string(bi.DesignedCapacity) + " mWh";
-    info.FullChargedCapacity = std::to_string(bi.FullChargedCapacity) + " mWh";
-    info.DefaultAlert1 = std::to_string(bi.DefaultAlert1) + " mWh";
-    info.DefaultAlert2 = std::to_string(bi.DefaultAlert2) + " mWh";
+    info.DesignedCapacity = std::to_string(bi.DesignedCapacity) + " mWh (" + 
+                            std::to_string(bi.DesignedCapacity / 1000.0) + " mW)";
+    info.FullChargedCapacity = std::to_string(bi.FullChargedCapacity) + " mWh (" + 
+                               std::to_string(bi.FullChargedCapacity / 1000.0) + " mW)";
+    info.DefaultAlert1 = std::to_string(bi.DefaultAlert1) + " mWh (" + 
+                         std::to_string(bi.DefaultAlert1 / 1000.0) + " mW)";
+    info.DefaultAlert2 = std::to_string(bi.DefaultAlert2) + " mWh (" + 
+                         std::to_string(bi.DefaultAlert2 / 1000.0) + " mW)";
 
     if (bi.DesignedCapacity > 0) 
     {
@@ -91,23 +95,50 @@ bool batteryinfo_bi::QueryBatteryStatus()
                          &bws, sizeof(bws), &bs, sizeof(bs), &bytesReturned, NULL))
         return false;
 
-        // writing to struct
+    // writing to struct
     info.Voltage = std::to_string(bs.Voltage) + " mV";
     info.Rate = std::to_string(bs.Rate) + " mW";
     info.PowerState =
         (bs.PowerState & BATTERY_CHARGING) ? "Charging" :
         (bs.PowerState & BATTERY_DISCHARGING) ? "Discharging" : "Idle";
 
-    info.RemainingCapacity = std::to_string(bs.Capacity) + " mWh";
+    info.RemainingCapacity = std::to_string(bs.Capacity) + " mWh (" + 
+                             std::to_string(bs.Capacity / 1000.0) + " mW)";
 
     if (bi.FullChargedCapacity > 0) 
     {
         int percent = (bs.Capacity * 100) / bi.FullChargedCapacity;
         info.ChargeLevel = std::to_string(percent) + "%";
+
+        int remainingMinutes = (bs.Capacity / (bs.Rate / 1000)) / 60; // minutes
+        int hours = remainingMinutes / 60;
+        int minutes = remainingMinutes % 60;
+
+        std::string timeRemaining = std::to_string(hours) + "h. " + std::to_string(minutes) + "m.";
+        info.TimeRemaining = timeRemaining;
+
+        // сalculate time to full charge
+        if (bs.PowerState & BATTERY_CHARGING) 
+        {
+            int remainingCapacity = bi.FullChargedCapacity - bs.Capacity;
+            int timeToFullMinutes = (remainingCapacity / (bs.Rate / 1000)) / 60; // minutes
+            int fullChargeHours = timeToFullMinutes / 60;
+            int fullChargeMinutes = timeToFullMinutes % 60;
+
+            std::string timeToFullCharge = std::to_string(fullChargeHours) + "h. " + 
+                                            std::to_string(fullChargeMinutes) + "m.";
+            info.TimeToFullCharge = timeToFullCharge;
+        }
+        else
+        {
+            info.TimeToFullCharge = "Not Charging";
+        }
     } 
     else 
     {
         info.ChargeLevel = "Unknown";
+        info.TimeRemaining = "Unknown";
+        info.TimeToFullCharge = "Unknown";
     }
 
     return true;
@@ -132,7 +163,7 @@ void batteryinfo_bi::PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX, int 
 {
     InitDirectWrite();
 
-        // win size
+    // win size
     D2D1_SIZE_F rtSize = pRT->GetSize();
     FLOAT maxWidth = rtSize.width;
 
@@ -173,6 +204,10 @@ void batteryinfo_bi::PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX, int 
         {L"Alerts", {
             {L"Default alert 1", std::wstring(info.DefaultAlert1.begin(), info.DefaultAlert1.end())},
             {L"Default alert 2", std::wstring(info.DefaultAlert2.begin(), info.DefaultAlert2.end())},
+        }},
+        {L"Time Remaining", {
+            {L"Time to 0%", std::wstring(info.TimeRemaining.begin(), info.TimeRemaining.end())},
+            {L"Time to full charge", std::wstring(info.TimeToFullCharge.begin(), info.TimeToFullCharge.end())},
         }}
     };
 
@@ -190,7 +225,7 @@ void batteryinfo_bi::PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX, int 
 
     for (const auto& category : categories)
     {
-            // category
+        // category
         pRT->DrawText(
             category.first.c_str(),
             static_cast<UINT32>(category.first.length()),
@@ -224,7 +259,7 @@ void batteryinfo_bi::PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX, int 
         y += 12;
     }
 
-        // clear
+    // clear
     pLabelBrush->Release();
     pValueBrush->Release();
     pHeaderBrush->Release();

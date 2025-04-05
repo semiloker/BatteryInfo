@@ -30,7 +30,7 @@ bool win_bi::Create(int nCmdShow)
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     int windowWidth = 450;
-    int windowHeight = 650;
+    int windowHeight = 750;
     int x = (screenWidth - windowWidth) / 2;
     int y = (screenHeight - windowHeight) / 2;
 
@@ -87,7 +87,7 @@ LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         case WM_GETMINMAXINFO:    pThis->OnGetMinMaxInfo(lParam); break;
         case WM_CREATE:           pThis->OnCreate(hwnd); break;
         case WM_SIZE:             
-            pThis->OnResize(); 
+            pThis->OnResize(wParam); 
 
             if (wParam == SIZE_MINIMIZED)
             {
@@ -202,7 +202,7 @@ void win_bi::OnCommand(WPARAM wParam)
 
 }
 
-void win_bi::OnResize()
+void win_bi::OnResize(WPARAM wParam)
 {
 
 }
@@ -272,7 +272,7 @@ void win_bi::OnGetMinMaxInfo(LPARAM lParam)
 {
     MINMAXINFO* mmi = (MINMAXINFO*)lParam;
     mmi->ptMinTrackSize.x = 350;
-    mmi->ptMinTrackSize.y = 650;
+    mmi->ptMinTrackSize.y = 750;
 }
 
 void win_bi::OnDestroy() 

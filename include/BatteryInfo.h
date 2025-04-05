@@ -53,6 +53,8 @@ public:
         std::string PowerState;
         std::string RemainingCapacity;
         std::string ChargeLevel;
+        std::string TimeRemaining;
+        std::string TimeToFullCharge;
     };
 
     bi_struct info;

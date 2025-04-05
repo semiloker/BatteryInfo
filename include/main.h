@@ -1,6 +1,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include <minwindef.h>
 #include <windows.h>
 #include <shellapi.h>
 #include <string>
@@ -29,7 +30,7 @@ private:
     
     void OnCommand(WPARAM wParam);
     void OnCreate(HWND hwnd);
-    void OnResize();
+    void OnResize(WPARAM wParam);
     void OnPaint(HWND hwnd);
     void OnKeyDown(WPARAM wParam);
     void OnKeyUp(WPARAM wParam);
@@ -48,6 +49,8 @@ private:
     NOTIFYICONDATA nid;
     HINSTANCE hInstance;
     HWND hwnd;
+
+    bool isMinimized = false;
 
     batteryinfo_bi* bi_bi;
 };
