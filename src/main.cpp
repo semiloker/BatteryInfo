@@ -153,6 +153,20 @@ void win_bi::AddTrayIcon()
     strncpy_s(nid.szTip, tooltip.c_str(), sizeof(nid.szTip) - 1);
 
     Shell_NotifyIcon(NIM_ADD, &nid);
+
+    UpdateTrayTooltip();
+}
+
+void win_bi::UpdateTrayTooltip() 
+{
+    std::string tooltip = 
+        "Power State: " + bi_bi->info.PowerState + "\n" +
+        "Charge: " + bi_bi->info.ChargeLevel + "\n" +
+        "Voltage: " + bi_bi->info.Voltage;
+
+    strncpy_s(nid.szTip, tooltip.c_str(), sizeof(nid.szTip) - 1);
+    nid.uFlags = NIF_TIP;
+    Shell_NotifyIcon(NIM_MODIFY, &nid);
 }
 
 void win_bi::RemoveTrayIcon() 
@@ -162,7 +176,11 @@ void win_bi::RemoveTrayIcon()
 
 void win_bi::OnCreate(HWND hwnd) 
 {
-    
+    SetTimer(hwnd, 1, 1000, NULL);
+
+    bool success = bi_bi->Initialize();
+    if (!success)
+        MessageBoxA(NULL, "Battery initialization failed!", "Error", MB_ICONERROR);
 }
 void win_bi::OnCommand(WPARAM wParam)
 {
@@ -202,7 +220,17 @@ void win_bi::OnRightButtonDown(WPARAM wParam, LPARAM lParam)
 
 void win_bi::OnTimer(WPARAM wParam)
 {
+    if (wParam == 1)
+    {
+        if (bi_bi)
+        {
+            bi_bi->QueryBatteryInfo();
+            bi_bi->QueryBatteryStatus();
+        }
 
+        UpdateTrayTooltip();
+        InvalidateRect(hwnd, NULL, true);
+    }
 }
 
 void win_bi::OnSetFocus(HWND hwnd)
@@ -235,6 +263,7 @@ void win_bi::OnGetMinMaxInfo(LPARAM lParam)
 void win_bi::OnDestroy() 
 {
     RemoveTrayIcon();
+    KillTimer(hwnd, 1);
     PostQuitMessage(0);
 }
 

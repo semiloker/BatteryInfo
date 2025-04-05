@@ -130,6 +130,8 @@ void batteryinfo_bi::PrintAllConsole() const
 
 void batteryinfo_bi::PrintAllWin(HDC hdc, int startX, int startY, int lineHeight)
 {
+    OutputDebugStringA(("DEBUG Chemistry = " + info.Chemistry + "\n").c_str());
+
     std::vector<std::string> lines = 
     {
         "Chemistry: " + info.Chemistry,

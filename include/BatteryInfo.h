@@ -43,7 +43,9 @@ public:
 
     bi_struct info;
 
-    batteryinfo_bi() : hDevInfo(INVALID_HANDLE_VALUE), hBattery(INVALID_HANDLE_VALUE), tag(0) {}
+    batteryinfo_bi() : hDevInfo(INVALID_HANDLE_VALUE), hBattery(INVALID_HANDLE_VALUE), tag(0) 
+    {
+    }
 
     ~batteryinfo_bi() 
     {
@@ -57,6 +59,7 @@ public:
     bool QueryTag();
     bool QueryBatteryInfo();
     bool QueryBatteryStatus();
+    void UpdateInfo();
     void PrintAllConsole() const;
     void PrintAllWin(HDC hdc, int startX = 10, int startY = 10, int lineHeight = 20);
 };

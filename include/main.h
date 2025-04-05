@@ -17,6 +17,7 @@ public:
     bool Create(int nCmdShow);
 
     void AddTrayIcon();
+    void UpdateTrayTooltip();
     void RemoveTrayIcon();
 
     WPARAM RunMessageLoop();
