@@ -4,6 +4,8 @@
 #include <windows.h>
 #include <d2d1.h>
 #include <dwrite.h>
+#include <algorithm>
+#include <map>
 #include <iostream>
 #include <vector>
 #include <initguid.h>
@@ -13,9 +15,17 @@
 #include <stdlib.h>
 #include <string>
 
-#pragma comment(lib, "setupapi.lib")
-#pragma comment(lib, "d2d1.lib")
-#pragma comment(lib, "dwrite.lib")
+// #pragma comment(lib, "setupapi.lib")
+// #pragma comment(lib, "d2d1.lib")
+// #pragma comment(lib, "dwrite.lib")
+
+template<typename T>
+T clamp(T value, T min, T max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+}
 
 DEFINE_GUID(GUID_DEVINTERFACE_BATTERY,
 0x72631e54, 0x78a4, 0x11d0, 0xbc, 0xf7, 0x00, 0xaa, 0x00, 0xb7, 0xb3, 0x2a);
@@ -69,8 +79,11 @@ public:
     ID2D1Factory* pD2DFactory = nullptr;
 
     IDWriteFactory* pDWriteFactory = nullptr;
-    IDWriteTextFormat* pTextFormat = nullptr;
 
+    IDWriteTextFormat* pTextFormatHeader = nullptr;
+    IDWriteTextFormat* pTextFormatLabel = nullptr;
+    IDWriteTextFormat* pTextFormatValue = nullptr;
+    
     void InitDirectWrite()
     {
         if (!pDWriteFactory)
@@ -78,14 +91,36 @@ public:
             DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&pDWriteFactory));
 
             pDWriteFactory->CreateTextFormat(
-                L"Segoe UI",                // Шрифт
-                nullptr,
+                L"Segoe UI",              
+                NULL,
+                DWRITE_FONT_WEIGHT_SEMI_BOLD,
+                DWRITE_FONT_STYLE_NORMAL,
+                DWRITE_FONT_STRETCH_NORMAL,
+                20.0f,                      
+                L"en-us",
+                &pTextFormatHeader
+            );
+            
+            pDWriteFactory->CreateTextFormat(
+                L"Segoe UI",
+                NULL,
                 DWRITE_FONT_WEIGHT_NORMAL,
                 DWRITE_FONT_STYLE_NORMAL,
                 DWRITE_FONT_STRETCH_NORMAL,
-                16.0f,                      // Розмір
+                12.0f,                     
                 L"en-us",
-                &pTextFormat
+                &pTextFormatLabel
+            );
+            
+            pDWriteFactory->CreateTextFormat(
+                L"Segoe UI",
+                NULL,
+                DWRITE_FONT_WEIGHT_REGULAR,
+                DWRITE_FONT_STYLE_NORMAL,
+                DWRITE_FONT_STRETCH_NORMAL,
+                14.0f,                     
+                L"en-us",
+                &pTextFormatValue
             );
         }
     }
@@ -96,7 +131,6 @@ public:
             D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &pD2DFactory);
     }
 
-    // Створення текстового формату
     ID2D1HwndRenderTarget* CreateRenderTarget(HWND hwnd)
     {
         RECT rc;
@@ -114,10 +148,12 @@ public:
 
     void CleanupDirectWrite()
     {
-        if (pTextFormat) { pTextFormat->Release(); pTextFormat = nullptr; }
+        if (pTextFormatHeader) { pTextFormatHeader->Release(); pTextFormatHeader = nullptr; }
+        if (pTextFormatLabel) { pTextFormatLabel->Release(); pTextFormatLabel = nullptr; }
+        if (pTextFormatValue) { pTextFormatValue->Release(); pTextFormatValue = nullptr; }
+    
         if (pDWriteFactory) { pDWriteFactory->Release(); pDWriteFactory = nullptr; }
     }
-
 
     void PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX = 10, int startY = 10, int lineHeight = 24);
     // void PrintAllWin(HDC hdc, int startX = 10, int startY = 10, int lineHeight = 20);

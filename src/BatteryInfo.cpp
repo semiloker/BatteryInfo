@@ -130,67 +130,103 @@ void batteryinfo_bi::PrintAllConsole() const
 
 void batteryinfo_bi::PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX, int startY, int lineHeight)
 {
-    InitDirectWrite(); // не забудь викликати
+    InitDirectWrite();
 
-    ID2D1SolidColorBrush* pTextBrush = nullptr;
-    pRT->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &pTextBrush);
+        // win size
+    D2D1_SIZE_F rtSize = pRT->GetSize();
+    FLOAT maxWidth = rtSize.width;
 
+    D2D1_COLOR_F textColor = D2D1::ColorF(0.1f, 0.1f, 0.1f);            // Темно-сірий текст
+    D2D1_COLOR_F labelColor = D2D1::ColorF(0.4f, 0.4f, 0.4f);           // Сірий для назв
+    D2D1_COLOR_F separatorColor = D2D1::ColorF(0.8f, 0.8f, 0.8f);       // Світло-сірий розділювач
+    D2D1_COLOR_F backgroundColor = D2D1::ColorF(0.98f, 0.98f, 0.98f);   // Майже білий фон
+    D2D1_COLOR_F headerColor = D2D1::ColorF(0.2f, 0.4f, 0.8f);          // Акцент (синій)
+
+    pRT->Clear(backgroundColor);
+
+    ID2D1SolidColorBrush* pLabelBrush = nullptr;
+    ID2D1SolidColorBrush* pValueBrush = nullptr;
     ID2D1SolidColorBrush* pHeaderBrush = nullptr;
-    pRT->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::SkyBlue), &pHeaderBrush);
-
     ID2D1SolidColorBrush* pSeparatorBrush = nullptr;
-    pRT->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::DarkSlateGray), &pSeparatorBrush);
 
-    std::vector<std::pair<std::wstring, std::wstring>> fields = {
-        {L"CHEMISTRY", std::wstring(info.Chemistry.begin(), info.Chemistry.end())},
-        {L"DESIGNED CAPACITY", std::wstring(info.DesignedCapacity.begin(), info.DesignedCapacity.end())},
-        {L"FULL CHARGED CAPACITY", std::wstring(info.FullChargedCapacity.begin(), info.FullChargedCapacity.end())},
-        {L"DEFAULT ALERT1", std::wstring(info.DefaultAlert1.begin(), info.DefaultAlert1.end())},
-        {L"DEFAULT ALERT2", std::wstring(info.DefaultAlert2.begin(), info.DefaultAlert2.end())},
-        {L"WEAR LEVEL", std::wstring(info.WearLevel.begin(), info.WearLevel.end())},
-        {L"VOLTAGE", std::wstring(info.Voltage.begin(), info.Voltage.end())},
-        {L"RATE", std::wstring(info.Rate.begin(), info.Rate.end())},
-        {L"POWER STATE", std::wstring(info.PowerState.begin(), info.PowerState.end())},
-        {L"REMAINING CAPACITY", std::wstring(info.RemainingCapacity.begin(), info.RemainingCapacity.end())},
-        {L"CHARGE LEVEL", std::wstring(info.ChargeLevel.begin(), info.ChargeLevel.end())},
+    pRT->CreateSolidColorBrush(labelColor, &pLabelBrush);
+    pRT->CreateSolidColorBrush(textColor, &pValueBrush);
+    pRT->CreateSolidColorBrush(headerColor, &pHeaderBrush);
+    pRT->CreateSolidColorBrush(separatorColor, &pSeparatorBrush);
+
+    std::map<std::wstring, std::vector<std::pair<std::wstring, std::wstring>>> categories = {
+        {L"Basic Info", {
+            {L"Chemistry", std::wstring(info.Chemistry.begin(), info.Chemistry.end())},
+            {L"Power state", std::wstring(info.PowerState.begin(), info.PowerState.end())},
+        }},
+        {L"Capacity", {
+            {L"Designed capacity", std::wstring(info.DesignedCapacity.begin(), info.DesignedCapacity.end())},
+            {L"Full charged capacity", std::wstring(info.FullChargedCapacity.begin(), info.FullChargedCapacity.end())},
+            {L"Remaining capacity", std::wstring(info.RemainingCapacity.begin(), info.RemainingCapacity.end())},
+            {L"Charge level", std::wstring(info.ChargeLevel.begin(), info.ChargeLevel.end())},
+            {L"Wear level", std::wstring(info.WearLevel.begin(), info.WearLevel.end())},
+        }},
+        {L"Voltage & Rate", {
+            {L"Voltage", std::wstring(info.Voltage.begin(), info.Voltage.end())},
+            {L"Rate", std::wstring(info.Rate.begin(), info.Rate.end())},
+        }},
+        {L"Alerts", {
+            {L"Default alert 1", std::wstring(info.DefaultAlert1.begin(), info.DefaultAlert1.end())},
+            {L"Default alert 2", std::wstring(info.DefaultAlert2.begin(), info.DefaultAlert2.end())},
+        }}
     };
 
     int y = startY;
 
-    std::wstring header = L"=== BATTERY INFORMATION ===";
+    std::wstring header = L"Battery Status";
     pRT->DrawText(
         header.c_str(),
         static_cast<UINT32>(header.length()),
-        pTextFormat,
-        D2D1::RectF((FLOAT)startX, (FLOAT)y, 800, (FLOAT)(y + lineHeight)),
+        pTextFormatHeader,
+        D2D1::RectF((FLOAT)startX, (FLOAT)y, maxWidth, (FLOAT)(y + lineHeight + 8)),
         pHeaderBrush
     );
-    y += lineHeight + 10;
+    y += lineHeight + 16;
 
-    for (const auto& field : fields)
+    for (const auto& category : categories)
     {
-        std::wstring line = field.first + L": " + field.second;
+            // category
         pRT->DrawText(
-            line.c_str(),
-            static_cast<UINT32>(line.length()),
-            pTextFormat,
-            D2D1::RectF((FLOAT)startX, (FLOAT)y, 800, (FLOAT)(y + lineHeight)),
-            pTextBrush
+            category.first.c_str(),
+            static_cast<UINT32>(category.first.length()),
+            pTextFormatLabel,
+            D2D1::RectF((FLOAT)startX, (FLOAT)y, maxWidth, (FLOAT)(y + lineHeight)),
+            pHeaderBrush
         );
+        y += lineHeight + 4;
 
-        y += lineHeight;
+        for (const auto& field : category.second)
+        {
+            std::wstring line = field.first + L" - " + field.second;
 
-        // Сепаратор
-        pRT->DrawLine(
-            D2D1::Point2F((FLOAT)startX, (FLOAT)y),
-            D2D1::Point2F(800, (FLOAT)y),
-            pSeparatorBrush,
-            1.0f
-        );
-        y += 4;
+            pRT->DrawText(
+                line.c_str(),
+                static_cast<UINT32>(line.length()),
+                pTextFormatValue,
+                D2D1::RectF((FLOAT)startX, (FLOAT)y, maxWidth, (FLOAT)(y + lineHeight)),
+                pValueBrush
+            );
+            y += lineHeight;
+
+            pRT->DrawLine(
+                D2D1::Point2F((FLOAT)startX, (FLOAT)(y + 2)),
+                D2D1::Point2F(maxWidth, (FLOAT)(y + 2)),
+                pSeparatorBrush,
+                0.5f
+            );
+            y += 8;
+        }
+        y += 12;
     }
 
-    pTextBrush->Release();
+        // clear
+    pLabelBrush->Release();
+    pValueBrush->Release();
     pHeaderBrush->Release();
     pSeparatorBrush->Release();
 }

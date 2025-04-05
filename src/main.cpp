@@ -29,8 +29,8 @@ bool win_bi::Create(int nCmdShow)
 
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    int windowWidth = 500;
-    int windowHeight = 400;
+    int windowWidth = 450;
+    int windowHeight = 650;
     int x = (screenWidth - windowWidth) / 2;
     int y = (screenHeight - windowHeight) / 2;
 
@@ -99,6 +99,7 @@ LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         case WM_KEYDOWN:          pThis->OnKeyDown(wParam); break;
         case WM_KEYUP:            pThis->OnKeyUp(wParam); break;
         case WM_MOUSEMOVE:        pThis->OnMouseMove(wParam, lParam); break;
+        case WM_MOUSEWHEEL: break;
         case WM_LBUTTONDOWN:      pThis->OnLeftButtonDown(wParam, lParam); break;
         case WM_RBUTTONDOWN:      pThis->OnRightButtonDown(wParam, lParam); break;
         case WM_TIMER:            pThis->OnTimer(wParam); break;
@@ -271,7 +272,7 @@ void win_bi::OnGetMinMaxInfo(LPARAM lParam)
 {
     MINMAXINFO* mmi = (MINMAXINFO*)lParam;
     mmi->ptMinTrackSize.x = 350;
-    mmi->ptMinTrackSize.y = 350;
+    mmi->ptMinTrackSize.y = 650;
 }
 
 void win_bi::OnDestroy() 
