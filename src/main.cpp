@@ -129,10 +129,24 @@ LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
 void win_bi::OnPaint(HWND hwnd)
 {
-    PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(hwnd, &ps);
-    bi_bi->PrintAllWin(hdc);
-    EndPaint(hwnd, &ps);
+    // PAINTSTRUCT ps;
+    // HDC hdc = BeginPaint(hwnd, &ps);
+    // bi_bi->PrintAllWin(hdc);
+    // EndPaint(hwnd, &ps);
+
+    bi_bi->InitDirect2D();
+    ID2D1HwndRenderTarget* pRenderTarget = bi_bi->CreateRenderTarget(hwnd);
+    if (pRenderTarget)
+    {
+        pRenderTarget->BeginDraw();
+        pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::Black));
+
+        bi_bi->PrintAllWinD2D(pRenderTarget, 20, 30);
+
+        pRenderTarget->EndDraw();
+        pRenderTarget->Release();
+    }
+    ValidateRect(hwnd, nullptr);
 }
 
 void win_bi::AddTrayIcon() 
@@ -263,6 +277,7 @@ void win_bi::OnGetMinMaxInfo(LPARAM lParam)
 void win_bi::OnDestroy() 
 {
     RemoveTrayIcon();
+    bi_bi->CleanupDirectWrite();
     KillTimer(hwnd, 1);
     PostQuitMessage(0);
 }

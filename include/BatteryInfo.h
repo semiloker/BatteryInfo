@@ -2,6 +2,8 @@
 #define BATTERYINFO_H
 
 #include <windows.h>
+#include <d2d1.h>
+#include <dwrite.h>
 #include <iostream>
 #include <vector>
 #include <initguid.h>
@@ -12,6 +14,8 @@
 #include <string>
 
 #pragma comment(lib, "setupapi.lib")
+#pragma comment(lib, "d2d1.lib")
+#pragma comment(lib, "dwrite.lib")
 
 DEFINE_GUID(GUID_DEVINTERFACE_BATTERY,
 0x72631e54, 0x78a4, 0x11d0, 0xbc, 0xf7, 0x00, 0xaa, 0x00, 0xb7, 0xb3, 0x2a);
@@ -61,7 +65,62 @@ public:
     bool QueryBatteryStatus();
     void UpdateInfo();
     void PrintAllConsole() const;
-    void PrintAllWin(HDC hdc, int startX = 10, int startY = 10, int lineHeight = 20);
+
+    ID2D1Factory* pD2DFactory = nullptr;
+
+    IDWriteFactory* pDWriteFactory = nullptr;
+    IDWriteTextFormat* pTextFormat = nullptr;
+
+    void InitDirectWrite()
+    {
+        if (!pDWriteFactory)
+        {
+            DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&pDWriteFactory));
+
+            pDWriteFactory->CreateTextFormat(
+                L"Segoe UI",                // Шрифт
+                nullptr,
+                DWRITE_FONT_WEIGHT_NORMAL,
+                DWRITE_FONT_STYLE_NORMAL,
+                DWRITE_FONT_STRETCH_NORMAL,
+                16.0f,                      // Розмір
+                L"en-us",
+                &pTextFormat
+            );
+        }
+    }
+
+    void InitDirect2D()
+    {
+        if (!pD2DFactory)
+            D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &pD2DFactory);
+    }
+
+    // Створення текстового формату
+    ID2D1HwndRenderTarget* CreateRenderTarget(HWND hwnd)
+    {
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+
+        D2D1_RENDER_TARGET_PROPERTIES rtProps = D2D1::RenderTargetProperties();
+        D2D1_HWND_RENDER_TARGET_PROPERTIES hwndProps =
+            D2D1::HwndRenderTargetProperties(hwnd,
+                D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top));
+
+        ID2D1HwndRenderTarget* pRenderTarget = nullptr;
+        pD2DFactory->CreateHwndRenderTarget(rtProps, hwndProps, &pRenderTarget);
+        return pRenderTarget;
+    }
+
+    void CleanupDirectWrite()
+    {
+        if (pTextFormat) { pTextFormat->Release(); pTextFormat = nullptr; }
+        if (pDWriteFactory) { pDWriteFactory->Release(); pDWriteFactory = nullptr; }
+    }
+
+
+    void PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX = 10, int startY = 10, int lineHeight = 24);
+    // void PrintAllWin(HDC hdc, int startX = 10, int startY = 10, int lineHeight = 20);
 };
 
 #endif
