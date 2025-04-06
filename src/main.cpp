@@ -161,9 +161,9 @@ void win_bi::AddTrayIcon()
     nid.hIcon = LoadIcon(NULL, IDI_INFORMATION);
 
     std::string tooltip = 
-        "Power State: " + bi_bi->info.PowerState + "\n" +
-        "Charge: " + bi_bi->info.ChargeLevel + "\n" +
-        "Voltage: " + bi_bi->info.Voltage;
+        "Power State: " + bi_bi->info_1s.PowerState + "\n" +
+        "Charge: " + bi_bi->info_1s.ChargeLevel + "\n" +
+        "Voltage: " + bi_bi->info_1s.Voltage;
 
     strncpy_s(nid.szTip, tooltip.c_str(), sizeof(nid.szTip) - 1);
 
@@ -175,9 +175,9 @@ void win_bi::AddTrayIcon()
 void win_bi::UpdateTrayTooltip() 
 {
     std::string tooltip = 
-        "Power State: " + bi_bi->info.PowerState + "\n" +
-        "Charge: " + bi_bi->info.ChargeLevel + "\n" +
-        "Voltage: " + bi_bi->info.Voltage;
+        "Power State: " + bi_bi->info_1s.PowerState + "\n" +
+        "Charge: " + bi_bi->info_1s.ChargeLevel + "\n" +
+        "Voltage: " + bi_bi->info_1s.Voltage;
 
     strncpy_s(nid.szTip, tooltip.c_str(), sizeof(nid.szTip) - 1);
     nid.uFlags = NIF_TIP;
@@ -192,6 +192,7 @@ void win_bi::RemoveTrayIcon()
 void win_bi::OnCreate(HWND hwnd) 
 {
     SetTimer(hwnd, 1, 1000, NULL);
+    SetTimer(hwnd, 2, 10000, NULL);
 
     bool success = bi_bi->Initialize();
     if (!success)
@@ -235,16 +236,22 @@ void win_bi::OnRightButtonDown(WPARAM wParam, LPARAM lParam)
 
 void win_bi::OnTimer(WPARAM wParam)
 {
-    if (wParam == 1)
+    if (!bi_bi) return;
+
+    switch (wParam)
     {
-        if (bi_bi)
-        {
+        case 1:
             bi_bi->QueryBatteryInfo();
             bi_bi->QueryBatteryStatus();
-        }
+            UpdateTrayTooltip();
+            InvalidateRect(hwnd, NULL, true);
+            break;
 
-        UpdateTrayTooltip();
-        InvalidateRect(hwnd, NULL, true);
+        case 2:
+            bi_bi->QueryBatteryRemaining();
+            UpdateTrayTooltip();
+            InvalidateRect(hwnd, NULL, true);
+            break;
     }
 }
 
@@ -280,6 +287,7 @@ void win_bi::OnDestroy()
     RemoveTrayIcon();
     bi_bi->CleanupDirectWrite();
     KillTimer(hwnd, 1);
+    KillTimer(hwnd, 2);
     PostQuitMessage(0);
 }
 
