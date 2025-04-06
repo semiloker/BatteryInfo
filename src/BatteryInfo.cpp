@@ -38,7 +38,7 @@ bool batteryinfo_bi::Initialize()
     if (hBattery == INVALID_HANDLE_VALUE) 
         return false;
 
-    return QueryTag() && QueryBatteryInfo() && QueryBatteryStatus();
+    return QueryTag() && QueryBatteryInfo() && QueryBatteryStatus() && QueryBatteryRemaining();
 }
 
 bool batteryinfo_bi::QueryTag() 
@@ -62,24 +62,24 @@ bool batteryinfo_bi::QueryBatteryInfo()
         return false;
 
     // writing to struct
-    info.Chemistry = std::string((char*)bi.Chemistry, 4);
-    info.DesignedCapacity = std::to_string(bi.DesignedCapacity) + " mWh (" + 
+    info_static.Chemistry = std::string((char*)bi.Chemistry, 4);
+    info_static.DesignedCapacity = std::to_string(bi.DesignedCapacity) + " mWh (" + 
                             std::to_string(bi.DesignedCapacity / 1000.0) + " mW)";
-    info.FullChargedCapacity = std::to_string(bi.FullChargedCapacity) + " mWh (" + 
+    info_static.FullChargedCapacity = std::to_string(bi.FullChargedCapacity) + " mWh (" + 
                                std::to_string(bi.FullChargedCapacity / 1000.0) + " mW)";
-    info.DefaultAlert1 = std::to_string(bi.DefaultAlert1) + " mWh (" + 
+    info_static.DefaultAlert1 = std::to_string(bi.DefaultAlert1) + " mWh (" + 
                          std::to_string(bi.DefaultAlert1 / 1000.0) + " mW)";
-    info.DefaultAlert2 = std::to_string(bi.DefaultAlert2) + " mWh (" + 
+    info_static.DefaultAlert2 = std::to_string(bi.DefaultAlert2) + " mWh (" + 
                          std::to_string(bi.DefaultAlert2 / 1000.0) + " mW)";
 
     if (bi.DesignedCapacity > 0) 
     {
         int wear = 100 - (bi.FullChargedCapacity * 100 / bi.DesignedCapacity);
-        info.WearLevel = std::to_string(wear) + "%";
+        info_static.WearLevel = std::to_string(wear) + "%";
     } 
     else 
     {
-        info.WearLevel = "Unknown";
+        info_static.WearLevel = "Unknown";
     }
 
     return true;
@@ -95,50 +95,81 @@ bool batteryinfo_bi::QueryBatteryStatus()
                          &bws, sizeof(bws), &bs, sizeof(bs), &bytesReturned, NULL))
         return false;
 
-    // writing to struct
-    info.Voltage = std::to_string(bs.Voltage) + " mV";
-    info.Rate = std::to_string(bs.Rate) + " mW";
-    info.PowerState =
+    double voltage = bs.Voltage / 1000.0;
+    std::ostringstream voltageStream;
+    voltageStream << bs.Voltage << " mV (" << std::fixed << std::setprecision(3) << voltage << " V)";
+    info_1s.Voltage = voltageStream.str();
+
+    double rate = bs.Rate / 1000.0; 
+    std::ostringstream rateStream;
+    rateStream << bs.Rate << " mW (" << std::fixed << std::setprecision(3) << rate << " W)";
+    info_1s.Rate = rateStream.str();
+
+    info_1s.PowerState =
         (bs.PowerState & BATTERY_CHARGING) ? "Charging" :
         (bs.PowerState & BATTERY_DISCHARGING) ? "Discharging" : "Idle";
 
-    info.RemainingCapacity = std::to_string(bs.Capacity) + " mWh (" + 
-                             std::to_string(bs.Capacity / 1000.0) + " mW)";
+    std::ostringstream capacityStream;
+    capacityStream << bs.Capacity << " mWh (" << std::fixed << std::setprecision(3) << bs.Capacity / 1000.0 << " Wh)";
+    info_1s.RemainingCapacity = capacityStream.str();
 
-    if (bi.FullChargedCapacity > 0) 
+    if (bi.FullChargedCapacity > 0)
     {
-        int percent = (bs.Capacity * 100) / bi.FullChargedCapacity;
-        info.ChargeLevel = std::to_string(percent) + "%";
+        double percent = (bs.Capacity * 100.0) / bi.FullChargedCapacity;
+        info_1s.ChargeLevel = std::to_string(percent) + "%";
+    }
 
-        int remainingMinutes = (bs.Capacity / (bs.Rate / 1000)) / 60; // minutes
-        int hours = remainingMinutes / 60;
-        int minutes = remainingMinutes % 60;
+    return true;
+}
 
-        std::string timeRemaining = std::to_string(hours) + "h. " + std::to_string(minutes) + "m.";
-        info.TimeRemaining = timeRemaining;
-
-        // сalculate time to full charge
-        if (bs.PowerState & BATTERY_CHARGING) 
+bool batteryinfo_bi::QueryBatteryRemaining()
+{
+    if (bi.FullChargedCapacity > 0) 
+    {    
+        if ((bs.PowerState & BATTERY_DISCHARGING) && bs.Rate != 0)
         {
-            int remainingCapacity = bi.FullChargedCapacity - bs.Capacity;
-            int timeToFullMinutes = (remainingCapacity / (bs.Rate / 1000)) / 60; // minutes
-            int fullChargeHours = timeToFullMinutes / 60;
-            int fullChargeMinutes = timeToFullMinutes % 60;
-
-            std::string timeToFullCharge = std::to_string(fullChargeHours) + "h. " + 
-                                            std::to_string(fullChargeMinutes) + "m.";
-            info.TimeToFullCharge = timeToFullCharge;
+            int rate_mW = abs(bs.Rate); // +
+            if (rate_mW > 0) 
+            {
+                int remainingMinutes = (bs.Capacity * 60) / rate_mW;
+                int hours = remainingMinutes / 60;
+                int minutes = remainingMinutes % 60;
+                info_10s.TimeRemaining = std::to_string(hours) + "h. " + std::to_string(minutes) + "m. (" +
+                    std::to_string(remainingMinutes) + " min, based on Capacity / Rate)";
+            }
+            else 
+            {
+                info_10s.TimeRemaining = "Calculating...";
+            }
         }
         else
         {
-            info.TimeToFullCharge = "Not Charging";
+            info_10s.TimeRemaining = "Not discharging";
         }
-    } 
-    else 
-    {
-        info.ChargeLevel = "Unknown";
-        info.TimeRemaining = "Unknown";
-        info.TimeToFullCharge = "Unknown";
+    
+        if ((bs.PowerState & BATTERY_CHARGING) && bs.Rate != 0)
+        {
+            int rate_mW = abs(bs.Rate); // +
+            int remainingCapacity = bi.FullChargedCapacity - bs.Capacity;
+            if (rate_mW > 0)
+            {
+                int timeToFullMinutes = (remainingCapacity * 60) / rate_mW;
+                int fullChargeHours = timeToFullMinutes / 60;
+                int fullChargeMinutes = timeToFullMinutes % 60;
+    
+                info_10s.TimeToFullCharge = std::to_string(fullChargeHours) + "h. " +
+                    std::to_string(fullChargeMinutes) + "m. (" +
+                    std::to_string(timeToFullMinutes) + " min, based on (FullChargedCapacity - Capacity) / Rate)";
+            }
+            else 
+            {
+                info_10s.TimeToFullCharge = "Calculating...";
+            }
+        }
+        else
+        {
+            info_10s.TimeToFullCharge = "Not Charging";
+        }
     }
 
     return true;
@@ -146,17 +177,17 @@ bool batteryinfo_bi::QueryBatteryStatus()
 
 void batteryinfo_bi::PrintAllConsole() const 
 {
-    std::cout << "Chemistry: " << info.Chemistry << "\n"
-              << "Designed Capacity: " << info.DesignedCapacity << "\n"
-              << "Full Charged Capacity: " << info.FullChargedCapacity << "\n"
-              << "Default Alert1: " << info.DefaultAlert1 << "\n"
-              << "Default Alert2: " << info.DefaultAlert2 << "\n"
-              << "Wear Level: " << info.WearLevel << "\n"
-              << "Voltage: " << info.Voltage << "\n"
-              << "Rate: " << info.Rate << "\n"
-              << "Power State: " << info.PowerState << "\n"
-              << "Remaining Capacity: " << info.RemainingCapacity << "\n"
-              << "Charge Level: " << info.ChargeLevel << "\n";
+    // std::cout << "Chemistry: " << info.Chemistry << "\n"
+    //           << "Designed Capacity: " << info.DesignedCapacity << "\n"
+    //           << "Full Charged Capacity: " << info.FullChargedCapacity << "\n"
+    //           << "Default Alert1: " << info.DefaultAlert1 << "\n"
+    //           << "Default Alert2: " << info.DefaultAlert2 << "\n"
+    //           << "Wear Level: " << info.WearLevel << "\n"
+    //           << "Voltage: " << info.Voltage << "\n"
+    //           << "Rate: " << info.Rate << "\n"
+    //           << "Power State: " << info.PowerState << "\n"
+    //           << "Remaining Capacity: " << info.RemainingCapacity << "\n"
+    //           << "Charge Level: " << info.ChargeLevel << "\n";
 }
 
 void batteryinfo_bi::PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX, int startY, int lineHeight)
@@ -187,27 +218,27 @@ void batteryinfo_bi::PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX, int 
 
     std::map<std::wstring, std::vector<std::pair<std::wstring, std::wstring>>> categories = {
         {L"Basic Info", {
-            {L"Chemistry", std::wstring(info.Chemistry.begin(), info.Chemistry.end())},
-            {L"Power state", std::wstring(info.PowerState.begin(), info.PowerState.end())},
+            {L"Chemistry", std::wstring(info_static.Chemistry.begin(), info_static.Chemistry.end())},
+            {L"Power state", std::wstring(info_1s.PowerState.begin(), info_1s.PowerState.end())},
         }},
         {L"Capacity", {
-            {L"Designed capacity", std::wstring(info.DesignedCapacity.begin(), info.DesignedCapacity.end())},
-            {L"Full charged capacity", std::wstring(info.FullChargedCapacity.begin(), info.FullChargedCapacity.end())},
-            {L"Remaining capacity", std::wstring(info.RemainingCapacity.begin(), info.RemainingCapacity.end())},
-            {L"Charge level", std::wstring(info.ChargeLevel.begin(), info.ChargeLevel.end())},
-            {L"Wear level", std::wstring(info.WearLevel.begin(), info.WearLevel.end())},
+            {L"Designed capacity", std::wstring(info_static.DesignedCapacity.begin(), info_static.DesignedCapacity.end())},
+            {L"Full charged capacity", std::wstring(info_static.FullChargedCapacity.begin(), info_static.FullChargedCapacity.end())},
+            {L"Remaining capacity", std::wstring(info_1s.RemainingCapacity.begin(), info_1s.RemainingCapacity.end())},
+            {L"Charge level", std::wstring(info_1s.ChargeLevel.begin(), info_1s.ChargeLevel.end())},
+            {L"Wear level", std::wstring(info_static.WearLevel.begin(), info_static.WearLevel.end())},
         }},
         {L"Voltage & Rate", {
-            {L"Voltage", std::wstring(info.Voltage.begin(), info.Voltage.end())},
-            {L"Rate", std::wstring(info.Rate.begin(), info.Rate.end())},
+            {L"Voltage", std::wstring(info_1s.Voltage.begin(), info_1s.Voltage.end())},
+            {L"Rate", std::wstring(info_1s.Rate.begin(), info_1s.Rate.end())},
         }},
         {L"Alerts", {
-            {L"Default alert 1", std::wstring(info.DefaultAlert1.begin(), info.DefaultAlert1.end())},
-            {L"Default alert 2", std::wstring(info.DefaultAlert2.begin(), info.DefaultAlert2.end())},
+            {L"Default alert 1", std::wstring(info_static.DefaultAlert1.begin(), info_static.DefaultAlert1.end())},
+            {L"Default alert 2", std::wstring(info_static.DefaultAlert2.begin(), info_static.DefaultAlert2.end())},
         }},
         {L"Time Remaining", {
-            {L"Time to 0%", std::wstring(info.TimeRemaining.begin(), info.TimeRemaining.end())},
-            {L"Time to full charge", std::wstring(info.TimeToFullCharge.begin(), info.TimeToFullCharge.end())},
+            {L"Time to 0%", std::wstring(info_10s.TimeRemaining.begin(), info_10s.TimeRemaining.end())},
+            {L"Time to full charge", std::wstring(info_10s.TimeToFullCharge.begin(), info_10s.TimeToFullCharge.end())},
         }}
     };
 

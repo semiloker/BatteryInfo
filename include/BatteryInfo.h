@@ -6,7 +6,9 @@
 #include <dwrite.h>
 #include <algorithm>
 #include <map>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <initguid.h>
 #include <setupapi.h>
@@ -40,7 +42,7 @@ private:
     ULONG tag;
 
 public:
-    struct bi_struct 
+    struct bi_struct_static 
     {
         std::string Chemistry;
         std::string DesignedCapacity;
@@ -48,16 +50,26 @@ public:
         std::string DefaultAlert1;
         std::string DefaultAlert2;
         std::string WearLevel;
+    };
+
+    struct bi_struct_dynamic_1s
+    {
         std::string Voltage;
         std::string Rate;
         std::string PowerState;
         std::string RemainingCapacity;
         std::string ChargeLevel;
+    };
+
+    struct bi_struct_dynamic_10s
+    {
         std::string TimeRemaining;
         std::string TimeToFullCharge;
     };
 
-    bi_struct info;
+    bi_struct_static info_static;
+    bi_struct_dynamic_1s info_1s;
+    bi_struct_dynamic_10s info_10s;
 
     batteryinfo_bi() : hDevInfo(INVALID_HANDLE_VALUE), hBattery(INVALID_HANDLE_VALUE), tag(0) 
     {
@@ -75,7 +87,9 @@ public:
     bool QueryTag();
     bool QueryBatteryInfo();
     bool QueryBatteryStatus();
+    bool QueryBatteryRemaining();
     void UpdateInfo();
+
     void PrintAllConsole() const;
 
     ID2D1Factory* pD2DFactory = nullptr;
