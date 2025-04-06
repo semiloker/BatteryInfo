@@ -7,6 +7,9 @@
 #include <string>
 
 #include "../include/BatteryInfo.h"
+#include "../include/init_d2d1_bi.h"
+#include "../include/init_dwrite_bi.h"
+#include "../include/draw_batteryinfo_bi.h"
 
 class win_bi
 {
@@ -53,6 +56,9 @@ private:
     bool isMinimized = false;
 
     batteryinfo_bi* bi_bi;
+    init_d2d1_bi* initd2d1_bi;
+    init_dwrite_bi* initdwrite_bi;
+    draw_batteryinfo_bi* draw_bibi_bi;
 };
 
 #endif

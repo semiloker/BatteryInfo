@@ -92,86 +92,86 @@ public:
 
     void PrintAllConsole() const;
 
-    ID2D1Factory* pD2DFactory = nullptr;
+    // ID2D1Factory* pD2DFactory = nullptr;
 
-    IDWriteFactory* pDWriteFactory = nullptr;
+    // IDWriteFactory* pDWriteFactory = nullptr;
 
-    IDWriteTextFormat* pTextFormatHeader = nullptr;
-    IDWriteTextFormat* pTextFormatLabel = nullptr;
-    IDWriteTextFormat* pTextFormatValue = nullptr;
+    // IDWriteTextFormat* pTextFormatHeader = nullptr;
+    // IDWriteTextFormat* pTextFormatLabel = nullptr;
+    // IDWriteTextFormat* pTextFormatValue = nullptr;
     
-    void InitDirectWrite()
-    {
-        if (!pDWriteFactory)
-        {
-            DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&pDWriteFactory));
+    // void InitDirectWrite()
+    // {
+    //     if (!pDWriteFactory)
+    //     {
+    //         DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&pDWriteFactory));
 
-            pDWriteFactory->CreateTextFormat(
-                L"Segoe UI",              
-                NULL,
-                DWRITE_FONT_WEIGHT_SEMI_BOLD,
-                DWRITE_FONT_STYLE_NORMAL,
-                DWRITE_FONT_STRETCH_NORMAL,
-                20.0f,                      
-                L"en-us",
-                &pTextFormatHeader
-            );
+    //         pDWriteFactory->CreateTextFormat(
+    //             L"Segoe UI",              
+    //             NULL,
+    //             DWRITE_FONT_WEIGHT_SEMI_BOLD,
+    //             DWRITE_FONT_STYLE_NORMAL,
+    //             DWRITE_FONT_STRETCH_NORMAL,
+    //             20.0f,                      
+    //             L"en-us",
+    //             &pTextFormatHeader
+    //         );
             
-            pDWriteFactory->CreateTextFormat(
-                L"Segoe UI",
-                NULL,
-                DWRITE_FONT_WEIGHT_NORMAL,
-                DWRITE_FONT_STYLE_NORMAL,
-                DWRITE_FONT_STRETCH_NORMAL,
-                12.0f,                     
-                L"en-us",
-                &pTextFormatLabel
-            );
+    //         pDWriteFactory->CreateTextFormat(
+    //             L"Segoe UI",
+    //             NULL,
+    //             DWRITE_FONT_WEIGHT_NORMAL,
+    //             DWRITE_FONT_STYLE_NORMAL,
+    //             DWRITE_FONT_STRETCH_NORMAL,
+    //             12.0f,                     
+    //             L"en-us",
+    //             &pTextFormatLabel
+    //         );
             
-            pDWriteFactory->CreateTextFormat(
-                L"Segoe UI",
-                NULL,
-                DWRITE_FONT_WEIGHT_REGULAR,
-                DWRITE_FONT_STYLE_NORMAL,
-                DWRITE_FONT_STRETCH_NORMAL,
-                14.0f,                     
-                L"en-us",
-                &pTextFormatValue
-            );
-        }
-    }
+    //         pDWriteFactory->CreateTextFormat(
+    //             L"Segoe UI",
+    //             NULL,
+    //             DWRITE_FONT_WEIGHT_REGULAR,
+    //             DWRITE_FONT_STYLE_NORMAL,
+    //             DWRITE_FONT_STRETCH_NORMAL,
+    //             14.0f,                     
+    //             L"en-us",
+    //             &pTextFormatValue
+    //         );
+    //     }
+    // }
 
-    void InitDirect2D()
-    {
-        if (!pD2DFactory)
-            D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &pD2DFactory);
-    }
+    // void InitDirect2D()
+    // {
+    //     if (!pD2DFactory)
+    //         D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &pD2DFactory);
+    // }
 
-    ID2D1HwndRenderTarget* CreateRenderTarget(HWND hwnd)
-    {
-        RECT rc;
-        GetClientRect(hwnd, &rc);
+    // ID2D1HwndRenderTarget* CreateRenderTarget(HWND hwnd)
+    // {
+    //     RECT rc;
+    //     GetClientRect(hwnd, &rc);
 
-        D2D1_RENDER_TARGET_PROPERTIES rtProps = D2D1::RenderTargetProperties();
-        D2D1_HWND_RENDER_TARGET_PROPERTIES hwndProps =
-            D2D1::HwndRenderTargetProperties(hwnd,
-                D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top));
+    //     D2D1_RENDER_TARGET_PROPERTIES rtProps = D2D1::RenderTargetProperties();
+    //     D2D1_HWND_RENDER_TARGET_PROPERTIES hwndProps =
+    //         D2D1::HwndRenderTargetProperties(hwnd,
+    //             D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top));
 
-        ID2D1HwndRenderTarget* pRenderTarget = nullptr;
-        pD2DFactory->CreateHwndRenderTarget(rtProps, hwndProps, &pRenderTarget);
-        return pRenderTarget;
-    }
+    //     ID2D1HwndRenderTarget* pRenderTarget = nullptr;
+    //     pD2DFactory->CreateHwndRenderTarget(rtProps, hwndProps, &pRenderTarget);
+    //     return pRenderTarget;
+    // }
 
-    void CleanupDirectWrite()
-    {
-        if (pTextFormatHeader) { pTextFormatHeader->Release(); pTextFormatHeader = nullptr; }
-        if (pTextFormatLabel) { pTextFormatLabel->Release(); pTextFormatLabel = nullptr; }
-        if (pTextFormatValue) { pTextFormatValue->Release(); pTextFormatValue = nullptr; }
+    // void CleanupDirectWrite()
+    // {
+    //     if (pTextFormatHeader) { pTextFormatHeader->Release(); pTextFormatHeader = nullptr; }
+    //     if (pTextFormatLabel) { pTextFormatLabel->Release(); pTextFormatLabel = nullptr; }
+    //     if (pTextFormatValue) { pTextFormatValue->Release(); pTextFormatValue = nullptr; }
     
-        if (pDWriteFactory) { pDWriteFactory->Release(); pDWriteFactory = nullptr; }
-    }
+    //     if (pDWriteFactory) { pDWriteFactory->Release(); pDWriteFactory = nullptr; }
+    // }
 
-    void PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX = 10, int startY = 10, int lineHeight = 24);
+    // void PrintAllWinD2D(ID2D1HwndRenderTarget* pRT, int startX = 10, int startY = 10, int lineHeight = 24);
     // void PrintAllWin(HDC hdc, int startX = 10, int startY = 10, int lineHeight = 20);
 };
 

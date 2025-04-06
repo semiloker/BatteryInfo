@@ -26,6 +26,9 @@ bool win_bi::Register()
 bool win_bi::Create(int nCmdShow) 
 {
     bi_bi = new batteryinfo_bi();
+    initd2d1_bi = new init_d2d1_bi();
+    initdwrite_bi = new init_dwrite_bi();
+    draw_bibi_bi = new draw_batteryinfo_bi();
 
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -135,14 +138,16 @@ void win_bi::OnPaint(HWND hwnd)
     // bi_bi->PrintAllWin(hdc);
     // EndPaint(hwnd, &ps);
 
-    bi_bi->InitDirect2D();
-    ID2D1HwndRenderTarget* pRenderTarget = bi_bi->CreateRenderTarget(hwnd);
+    initd2d1_bi->InitDirect2D();
+    ID2D1HwndRenderTarget* pRenderTarget = initd2d1_bi->CreateRenderTarget(hwnd);
     if (pRenderTarget)
     {
         pRenderTarget->BeginDraw();
         pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::Black));
 
-        bi_bi->PrintAllWinD2D(pRenderTarget, 20, 30);
+        // bi_bi->PrintAllWinD2D(pRenderTarget, 20, 30);
+        initdwrite_bi->InitGraph();
+        draw_bibi_bi->drawHeaderBatteryInfoD2D(pRenderTarget, bi_bi, initdwrite_bi, 20, 30, 24);
 
         pRenderTarget->EndDraw();
         pRenderTarget->Release();
@@ -285,7 +290,7 @@ void win_bi::OnGetMinMaxInfo(LPARAM lParam)
 void win_bi::OnDestroy() 
 {
     RemoveTrayIcon();
-    bi_bi->CleanupDirectWrite();
+    initdwrite_bi->CleanupDirectWrite();
     KillTimer(hwnd, 1);
     KillTimer(hwnd, 2);
     PostQuitMessage(0);
