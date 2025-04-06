@@ -23,6 +23,7 @@ public:
     void AddTrayIcon();
     void UpdateTrayTooltip();
     void RemoveTrayIcon();
+    void ShowTrayMenu();
 
     WPARAM RunMessageLoop();
 

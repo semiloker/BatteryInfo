@@ -13,12 +13,16 @@ bool win_bi::Register()
     wc.cbClsExtra = 0;
     wc.cbWndExtra = 0;
     wc.hInstance = hInstance;
-    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    // wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    // wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hIcon = (HICON)LoadImageA(NULL, "sign-of-battery-icon-vector.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+    wc.hIconSm = (HICON)LoadImageA(NULL, "sign-of-battery-icon-vector.ico", IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+    if (!wc.hIcon) MessageBoxA(NULL, "Failed to load icon!", "Error", MB_ICONERROR);
+    
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.lpszMenuName = NULL;
     wc.lpszClassName = szClassName;
-    wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
     return RegisterClassEx(&wc) != 0;
 }
@@ -115,11 +119,17 @@ LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
             DestroyWindow(hwnd); 
         break;
         case WM_USER + 1:
-            if (lParam == WM_LBUTTONDBLCLK) 
+            switch (lParam) 
             {
-                ShowWindow(hwnd, SW_RESTORE);
-                SetForegroundWindow(hwnd);
-                pThis->RemoveTrayIcon();
+                case WM_LBUTTONDBLCLK:
+                    ShowWindow(hwnd, SW_RESTORE);
+                    SetForegroundWindow(hwnd);
+                    pThis->RemoveTrayIcon();
+                    break;
+            
+                case WM_RBUTTONUP:
+                    pThis->ShowTrayMenu();
+                    break;
             }
         break;
         case WM_DESTROY:
@@ -163,7 +173,7 @@ void win_bi::AddTrayIcon()
     nid.uID = 1;
     nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     nid.uCallbackMessage = WM_USER + 1;
-    nid.hIcon = LoadIcon(NULL, IDI_INFORMATION);
+    nid.hIcon = (HICON)LoadImageA(NULL, "sign-of-battery-icon-vector.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
 
     std::string tooltip = 
         "Power State: " + bi_bi->info_1s.PowerState + "\n" +
@@ -192,6 +202,36 @@ void win_bi::UpdateTrayTooltip()
 void win_bi::RemoveTrayIcon() 
 {
     Shell_NotifyIcon(NIM_DELETE, &nid);
+}
+
+void win_bi::ShowTrayMenu()
+{
+    POINT pt;
+    GetCursorPos(&pt);
+
+    HMENU hMenu = CreatePopupMenu();
+    if (hMenu) 
+    {
+        InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 1, "Open");
+        InsertMenu(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+        InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 2, "Exit");
+
+        SetForegroundWindow(hwnd);
+        int cmd = TrackPopupMenu(hMenu, TPM_RETURNCMD | TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hwnd, NULL);
+        DestroyMenu(hMenu);
+
+        switch (cmd) 
+        {
+            case 1:
+                ShowWindow(hwnd, SW_RESTORE);
+                SetForegroundWindow(hwnd);
+                RemoveTrayIcon();
+                break;
+            case 2:
+                PostMessage(hwnd, WM_CLOSE, 0, 0);
+                break;
+        }
+    }
 }
 
 void win_bi::OnCreate(HWND hwnd) 
