@@ -10,6 +10,7 @@
 #include "../include/init_d2d1_bi.h"
 #include "../include/init_dwrite_bi.h"
 #include "../include/draw_batteryinfo_bi.h"
+#include "../include/overlay_bi.h"
 
 class win_bi
 {
@@ -24,6 +25,8 @@ public:
     void UpdateTrayTooltip();
     void RemoveTrayIcon();
     void ShowTrayMenu();
+
+    void UpdateOverlayText();
 
     WPARAM RunMessageLoop();
 
@@ -60,6 +63,7 @@ private:
     init_d2d1_bi* initd2d1_bi;
     init_dwrite_bi* initdwrite_bi;
     draw_batteryinfo_bi* draw_bibi_bi;
+    overlay_bi* ov_bi;
 };
 
 #endif
