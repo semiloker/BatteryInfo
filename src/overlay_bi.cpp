@@ -45,7 +45,7 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
         WS_POPUP,
         0, 0,
         screenWidth, screenHeight,
-        NULL, // Змінено з parentHwnd на NULL для незалежності від батьківського вікна
+        NULL,
         NULL,
         hInstance,
         NULL
@@ -57,11 +57,10 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
         return;
     }
 
-    // Встановлення прозорості
     SetLayeredWindowAttributes(g_hwnd, RGB(0, 0, 0), 1, LWA_COLORKEY);
 
     g_hFont = CreateFontA(
-        24,                         // Font height
+        14,                         // Font height
         0,                          // Character width
         0,                          // Escape angle
         0,                          // Orientation angle
@@ -74,22 +73,18 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
         CLIP_DEFAULT_PRECIS,        // Clipping precision
         CLEARTYPE_QUALITY,          // Quality
         DEFAULT_PITCH | FF_SWISS,   // Pitch and family
-        "Arial"                     // Font name
+        "Segoe UI"                     // Font name
     );
 
-    // Вимкнення анімацій DWM для кращої продуктивності
     BOOL enable = TRUE;
     DwmSetWindowAttribute(g_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &enable, sizeof(enable));
     
-    // Додаткові налаштування для повноекранного режиму
     BOOL disableMaximize = TRUE;
     DwmSetWindowAttribute(g_hwnd, DWMWA_DISALLOW_PEEK, &disableMaximize, sizeof(disableMaximize));
     
-    // Налаштування вікна як постійно поверх всіх
     SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, screenWidth, screenHeight, 
                  SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     
-    // Встановлення додаткових стилів вікна
     SetWindowLong(g_hwnd, GWL_EXSTYLE, 
                  GetWindowLong(g_hwnd, GWL_EXSTYLE) | 
                  WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_NOACTIVATE);
@@ -99,7 +94,6 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
     
     RenderText(g_hwnd);
     
-    // Додаткова функція для забезпечення перебування поверх всіх вікон
     ForceTopMost();
 }
 
@@ -108,7 +102,6 @@ void overlay_bi::ForceTopMost()
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     
-    // Встановлення вікна як завжди поверх інших
     SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, screenWidth, screenHeight, 
                  SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
@@ -118,17 +111,17 @@ void overlay_bi::UpdatePosition()
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     
-    // Перевірка, чи змінився розмір екрану
     RECT currentRect;
     GetWindowRect(g_hwnd, &currentRect);
     
     if (currentRect.right - currentRect.left != screenWidth || 
-        currentRect.bottom - currentRect.top != screenHeight) {
-        // Розмір екрану змінився, оновлюємо розмір і положення вікна
+        currentRect.bottom - currentRect.top != screenHeight) 
+        {
         SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, screenWidth, screenHeight, 
                      SWP_NOACTIVATE);
-    } else {
-        // Просто підтверджуємо TOPMOST статус
+    } 
+    else 
+    {
         SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, 0, 0, 
                      SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     }
@@ -181,13 +174,13 @@ void overlay_bi::RenderText(HWND hwnd)
             {
                 RECT shadowRect = g_textRectPos;
                 OffsetRect(&shadowRect, i, j);
-                ::DrawTextA(memDC, g_text.c_str(), -1, &shadowRect, DT_LEFT | DT_TOP | DT_SINGLELINE);
+                ::DrawTextA(memDC, g_text.c_str(), -1, &shadowRect, DT_LEFT | DT_TOP | DT_WORDBREAK);
             }
         }
     }
     
     SetTextColor(memDC, RGB(255, 255, 255));
-    ::DrawTextA(memDC, g_text.c_str(), -1, &g_textRectPos, DT_LEFT | DT_TOP | DT_SINGLELINE);
+    ::DrawTextA(memDC, g_text.c_str(), -1, &g_textRectPos, DT_LEFT | DT_TOP | DT_WORDBREAK);
     
     BitBlt(hdc, 0, 0, clientRect.right, clientRect.bottom, memDC, 0, 0, SRCCOPY);
     

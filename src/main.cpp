@@ -33,7 +33,7 @@ bool win_bi::Create(int nCmdShow)
     initd2d1_bi = new init_d2d1_bi();
     initdwrite_bi = new init_dwrite_bi();
     draw_bibi_bi = new draw_batteryinfo_bi();
-    ov_bi = new overlay_bi(NULL, NULL, {20, 20, 800, 50}, "Test");
+    ov_bi = new overlay_bi(NULL, NULL, {20, 20, 800, 300}, "Test");
 
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -257,9 +257,9 @@ void win_bi::OnResize(WPARAM wParam)
 void win_bi::UpdateOverlayText()
 {
     std::string newText = 
-        "Power State: " + bi_bi->info_1s.PowerState + "\n" +
+        "Power State: " + bi_bi->info_1s.RemainingCapacity + "\n" +
         "Charge: " + bi_bi->info_1s.ChargeLevel + "\n" +
-        "Voltage: " + bi_bi->info_1s.Voltage;
+        "Voltage: " + bi_bi->info_1s.Rate;
 
     if (ov_bi) 
     {
@@ -313,7 +313,6 @@ void win_bi::OnTimer(WPARAM wParam)
 
         case 2:
             bi_bi->QueryBatteryRemaining();
-            UpdateTrayTooltip();
             InvalidateRect(hwnd, NULL, true);
             break;
     }
