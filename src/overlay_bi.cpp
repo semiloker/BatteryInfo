@@ -39,13 +39,13 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
     g_hwnd = CreateWindowExA(
-        WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_LAYERED,
+        WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE,
         CLASS_NAME,
         "Transparent Overlay",
         WS_POPUP,
         0, 0,
         screenWidth, screenHeight,
-        parentHwnd,
+        NULL, // Змінено з parentHwnd на NULL для незалежності від батьківського вікна
         NULL,
         hInstance,
         NULL
@@ -57,6 +57,7 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
         return;
     }
 
+    // Встановлення прозорості
     SetLayeredWindowAttributes(g_hwnd, RGB(0, 0, 0), 1, LWA_COLORKEY);
 
     g_hFont = CreateFontA(
@@ -76,15 +77,61 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
         "Arial"                     // Font name
     );
 
+    // Вимкнення анімацій DWM для кращої продуктивності
     BOOL enable = TRUE;
     DwmSetWindowAttribute(g_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &enable, sizeof(enable));
-
-    SetWindowLong(g_hwnd, GWL_EXSTYLE, GetWindowLong(g_hwnd, GWL_EXSTYLE) | WS_EX_LAYERED | WS_EX_TRANSPARENT);
+    
+    // Додаткові налаштування для повноекранного режиму
+    BOOL disableMaximize = TRUE;
+    DwmSetWindowAttribute(g_hwnd, DWMWA_DISALLOW_PEEK, &disableMaximize, sizeof(disableMaximize));
+    
+    // Налаштування вікна як постійно поверх всіх
+    SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, screenWidth, screenHeight, 
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    
+    // Встановлення додаткових стилів вікна
+    SetWindowLong(g_hwnd, GWL_EXSTYLE, 
+                 GetWindowLong(g_hwnd, GWL_EXSTYLE) | 
+                 WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_NOACTIVATE);
 
     ShowWindow(g_hwnd, SW_SHOW);
     UpdateWindow(g_hwnd);
     
     RenderText(g_hwnd);
+    
+    // Додаткова функція для забезпечення перебування поверх всіх вікон
+    ForceTopMost();
+}
+
+void overlay_bi::ForceTopMost()
+{
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    
+    // Встановлення вікна як завжди поверх інших
+    SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, screenWidth, screenHeight, 
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+}
+
+void overlay_bi::UpdatePosition()
+{
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    
+    // Перевірка, чи змінився розмір екрану
+    RECT currentRect;
+    GetWindowRect(g_hwnd, &currentRect);
+    
+    if (currentRect.right - currentRect.left != screenWidth || 
+        currentRect.bottom - currentRect.top != screenHeight) {
+        // Розмір екрану змінився, оновлюємо розмір і положення вікна
+        SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, screenWidth, screenHeight, 
+                     SWP_NOACTIVATE);
+    } else {
+        // Просто підтверджуємо TOPMOST статус
+        SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, 0, 0, 
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
 }
 
 LRESULT CALLBACK overlay_bi::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -154,9 +201,8 @@ void overlay_bi::RenderText(HWND hwnd)
 
 void overlay_bi::UpdateText(const std::string& newText)
 {
-    g_text = newText;  // Оновлюємо текст
+    g_text = newText;
 
-    // Перерисовуємо вікно, щоб показати оновлений текст
-    InvalidateRect(g_hwnd, NULL, TRUE);  // Вказуємо, щоб вікно перерисувалось
-    UpdateWindow(g_hwnd);                // Оновлюємо вікно
+    InvalidateRect(g_hwnd, NULL, TRUE);
+    UpdateWindow(g_hwnd);
 }

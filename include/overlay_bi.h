@@ -19,8 +19,11 @@ public:
     ~overlay_bi();
 
     void CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd = NULL);
+    void ForceTopMost();
     void RenderText(HWND hwnd);
     void UpdateText(const std::string& newText);
+    void UpdatePosition();
+
     
     static LRESULT CALLBACK StaticWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);    
     LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

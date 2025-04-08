@@ -264,6 +264,7 @@ void win_bi::UpdateOverlayText()
     if (ov_bi) 
     {
         ov_bi->UpdateText(newText);
+        ov_bi->UpdatePosition();
         InvalidateRect(ov_bi->g_hwnd, NULL, TRUE);
     }
 }
