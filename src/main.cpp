@@ -1,4 +1,5 @@
 #include "../include/main.h"
+#include <thread>
 
 const char win_bi::szClassName[] = "BatteryInfo";
 
@@ -33,8 +34,9 @@ bool win_bi::Create(int nCmdShow)
     initd2d1_bi = new init_d2d1_bi();
     initdwrite_bi = new init_dwrite_bi();
     draw_bibi_bi = new draw_batteryinfo_bi();
-    ov_bi = new overlay_bi(NULL, NULL, {20, 20, 800, 300}, "Test");
-
+    ru_bi = new resource_usage_bi();
+    ov_bi = new overlay_bi(NULL, NULL, {20, 500, 400, 800}, "Test");
+    
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     int windowWidth = 450;
@@ -240,10 +242,14 @@ void win_bi::OnCreate(HWND hwnd)
     SetTimer(hwnd, 1, 1000, NULL);
     SetTimer(hwnd, 2, 10000, NULL);
 
-    bool success = bi_bi->Initialize();
+    bool success = bi_bi->Initialize() && ru_bi->updateRam();
+
     if (!success)
         MessageBoxA(NULL, "Battery initialization failed!", "Error", MB_ICONERROR);
+
+    UpdateOverlayText();
 }
+
 void win_bi::OnCommand(WPARAM wParam)
 {
 
@@ -259,12 +265,21 @@ void win_bi::UpdateOverlayText()
     std::string newText = 
         "Power State: " + bi_bi->info_1s.RemainingCapacity + "\n" +
         "Charge: " + bi_bi->info_1s.ChargeLevel + "\n" +
-        "Voltage: " + bi_bi->info_1s.Rate;
+        "Voltage: " + bi_bi->info_1s.Rate + "\n" +
+        "ullAvailPhys: " + ru_bi->ramInfo.ullAvailPhys + "\n" +
+        "UsagePercent: " + ru_bi->cpuInfo.UsagePercent;
+        // "cpuInfo.UsagePercent: " + bi_bi->cpuInfo.UsagePercent + "\n" +
+        // "ramInfo.UsedPercent: " + bi_bi->ramInfo.UsedPercent + "\n" +
+        // "ramInfo.AvailPhys: " + bi_bi->ramInfo.AvailPhys;
 
     if (ov_bi) 
     {
+        ru_bi->updateRam();
+        ru_bi->updateCpu();
+
         ov_bi->UpdateText(newText);
         ov_bi->UpdatePosition();
+
         InvalidateRect(ov_bi->g_hwnd, NULL, TRUE);
     }
 }
@@ -306,6 +321,8 @@ void win_bi::OnTimer(WPARAM wParam)
         case 1:
             bi_bi->QueryBatteryInfo();
             bi_bi->QueryBatteryStatus();
+            // bi_bi->QueryCpuInfo();
+            // bi_bi->QueryRamInfo();
             UpdateTrayTooltip();
             UpdateOverlayText();
             InvalidateRect(hwnd, NULL, true);
@@ -347,10 +364,11 @@ void win_bi::OnGetMinMaxInfo(LPARAM lParam)
 
 void win_bi::OnDestroy() 
 {
-    RemoveTrayIcon();
+    ru_bi->cleanup();
     initdwrite_bi->CleanupDirectWrite();
     KillTimer(hwnd, 1);
     KillTimer(hwnd, 2);
+    RemoveTrayIcon();
     PostQuitMessage(0);
 }
 

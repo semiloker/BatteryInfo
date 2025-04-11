@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <d2d1.h>
 #include <dwrite.h>
+#include <pdh.h>
 #include <algorithm>
 #include <map>
 #include <iomanip>
@@ -88,7 +89,11 @@ public:
     bool QueryBatteryInfo();
     bool QueryBatteryStatus();
     bool QueryBatteryRemaining();
-    void UpdateInfo();
+
+    // FILETIME prevIdleTime = {}, prevKernelTime = {}, prevUserTime = {};
+
+    // bool QueryRamInfo();
+    // bool QueryCpuInfo();
 
     void PrintAllConsole() const;
 };

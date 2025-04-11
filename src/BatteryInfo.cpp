@@ -38,7 +38,7 @@ bool batteryinfo_bi::Initialize()
     if (hBattery == INVALID_HANDLE_VALUE) 
         return false;
 
-    return QueryTag() && QueryBatteryInfo() && QueryBatteryStatus() && QueryBatteryRemaining();
+    return QueryTag() && QueryBatteryInfo() && QueryBatteryStatus() && QueryBatteryRemaining() /*&& QueryRamInfo() && QueryCpuInfo()*/;
 }
 
 bool batteryinfo_bi::QueryTag() 
@@ -174,6 +174,66 @@ bool batteryinfo_bi::QueryBatteryRemaining()
 
     return true;
 }
+
+// bool batteryinfo_bi::QueryRamInfo() 
+// {
+//     MEMORYSTATUSEX statex = { sizeof(statex) };
+
+//     if (GlobalMemoryStatusEx(&statex)) {
+//         DWORDLONG total = statex.ullTotalPhys;
+//         DWORDLONG avail = statex.ullAvailPhys;
+//         DWORDLONG used = total - avail;
+//         DWORD usagePercent = statex.dwMemoryLoad;
+
+//         ramInfo.TotalPhys = std::to_string(total / (1024 * 1024)) + " MB";
+//         ramInfo.AvailPhys = std::to_string(avail / (1024 * 1024)) + " MB";
+//         ramInfo.UsedPercent = std::to_string(usagePercent) + "%";
+//         return true;
+//     }
+//     return false;
+// }
+
+// bool batteryinfo_bi::QueryCpuInfo() 
+// {
+//     FILETIME idleTime, kernelTime, userTime;
+//     if (!GetSystemTimes(&idleTime, &kernelTime, &userTime))
+//         return false;
+
+//     ULARGE_INTEGER idle, kernel, user, prevIdle, prevKernel, prevUser;
+//     idle.LowPart = idleTime.dwLowDateTime;
+//     idle.HighPart = idleTime.dwHighDateTime;
+
+//     kernel.LowPart = kernelTime.dwLowDateTime;
+//     kernel.HighPart = kernelTime.dwHighDateTime;
+
+//     user.LowPart = userTime.dwLowDateTime;
+//     user.HighPart = userTime.dwHighDateTime;
+
+//     prevIdle.LowPart = prevIdleTime.dwLowDateTime;
+//     prevIdle.HighPart = prevIdleTime.dwHighDateTime;
+
+//     prevKernel.LowPart = prevKernelTime.dwLowDateTime;
+//     prevKernel.HighPart = prevKernelTime.dwHighDateTime;
+
+//     prevUser.LowPart = prevUserTime.dwLowDateTime;
+//     prevUser.HighPart = prevUserTime.dwHighDateTime;
+
+//     ULONGLONG sysTime = (kernel.QuadPart - prevKernel.QuadPart) + (user.QuadPart - prevUser.QuadPart);
+//     ULONGLONG idleDiff = idle.QuadPart - prevIdle.QuadPart;
+
+//     if (sysTime == 0)
+//         return false;
+
+//     int cpuUsage = static_cast<int>(100.0 * (sysTime - idleDiff) / sysTime);
+//     cpuInfo.UsagePercent = std::to_string(cpuUsage) + "%";
+
+//     // збереження нових значень
+//     prevIdleTime = idleTime;
+//     prevKernelTime = kernelTime;
+//     prevUserTime = userTime;
+
+//     return true;
+// }
 
 void batteryinfo_bi::PrintAllConsole() const 
 {

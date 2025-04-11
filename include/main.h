@@ -11,6 +11,7 @@
 #include "../include/init_dwrite_bi.h"
 #include "../include/draw_batteryinfo_bi.h"
 #include "../include/overlay_bi.h"
+#include "../include/resource_usage_bi.h"
 
 class win_bi
 {
@@ -64,6 +65,7 @@ private:
     init_dwrite_bi* initdwrite_bi;
     draw_batteryinfo_bi* draw_bibi_bi;
     overlay_bi* ov_bi;
+    resource_usage_bi* ru_bi;
 };
 
 #endif
