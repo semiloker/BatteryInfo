@@ -1,4 +1,5 @@
 #include "../include/main.h"
+#include <string>
 
 const char win_bi::szClassName[] = "BatteryInfo";
 
@@ -261,20 +262,25 @@ void win_bi::OnResize(WPARAM wParam)
 
 void win_bi::UpdateOverlayText()
 {
-    std::string newText = 
-        "Power State: " + bi_bi->info_1s.RemainingCapacity + "\n" +
-        "Charge: " + bi_bi->info_1s.ChargeLevel + "\n" +
-        "Voltage: " + bi_bi->info_1s.Rate + "\n" +
-        "ullAvailPhys: " + ru_bi->ramInfo.ullAvailPhys + "\n" +
-        "UsagePercent: " + ru_bi->cpuInfo.UsagePercent;
-        // "cpuInfo.UsagePercent: " + bi_bi->cpuInfo.UsagePercent + "\n" +
-        // "ramInfo.UsedPercent: " + bi_bi->ramInfo.UsedPercent + "\n" +
-        // "ramInfo.AvailPhys: " + bi_bi->ramInfo.AvailPhys;
-
     if (ov_bi) 
     {
         ru_bi->updateRam();
         ru_bi->updateCpu();
+
+        std::string newText = 
+        "Power State: " + bi_bi->info_1s.RemainingCapacity + "\n" +
+        "Charge: " + bi_bi->info_1s.ChargeLevel + "\n" +
+        "Voltage: " + bi_bi->info_1s.Rate + "\n" +
+        "ullAvailPhys: " + ru_bi->ramInfo.ullAvailPhys + "\n" +
+        "CPU: " + ru_bi->cpuInfo.UsagePercent;
+        // "cpuInfo.UsagePercent: " + bi_bi->cpuInfo.UsagePercent + "\n" +
+        // "ramInfo.UsedPercent: " + bi_bi->ramInfo.UsedPercent + "\n" +
+        // "ramInfo.AvailPhys: " + bi_bi->ramInfo.AvailPhys;
+
+        for (int i = 0; i < ru_bi->cpuInfo.CoreUsagePercents.size(); ++i)
+        {
+            newText += "\nCore(" + std::to_string(i + 1) + "): " + ru_bi->cpuInfo.CoreUsagePercents[i];
+        }
 
         ov_bi->UpdateText(newText);
         ov_bi->UpdatePosition();

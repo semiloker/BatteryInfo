@@ -23,6 +23,7 @@ public:
     struct CpuInfo 
     {
         std::string UsagePercent;
+        std::vector<std::string> CoreUsagePercents;
     };
 
     struct RamInfo

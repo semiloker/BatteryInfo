@@ -1,5 +1,4 @@
 #include "../include/resource_usage_bi.h"
-#include <string>
 
 bool resource_usage_bi::updateRam()
 {
@@ -25,61 +24,97 @@ bool resource_usage_bi::updateRam()
 bool resource_usage_bi::updateCpu() 
 {
     static PDH_HQUERY query = NULL;
-    static PDH_HCOUNTER counter = NULL;
+    static std::vector<PDH_HCOUNTER> counters;
+    static DWORD coreCount = 0;
+
     PDH_STATUS status;
-    
+
     if (query == NULL) 
     {
+        SYSTEM_INFO sysInfo;
+        GetSystemInfo(&sysInfo);
+        coreCount = sysInfo.dwNumberOfProcessors;
+
         status = PdhOpenQuery(NULL, 0, &query);
         if (status != ERROR_SUCCESS) 
         {
             return false;
         }
-        
-        LPCWSTR counterPath = L"\\Processor(_Total)\\% Processor Time";
-        
-        status = PdhAddEnglishCounterW(query, counterPath, 0, &counter);
-        if (status != ERROR_SUCCESS) 
+
+        counters.resize(coreCount);
+        cpuInfo.CoreUsagePercents.resize(coreCount);
+
+        for (DWORD i = 0; i < coreCount; ++i)
         {
-            PdhCloseQuery(query);
-            query = NULL;
-            return false;
+            std::wostringstream path;
+            path << L"\\Processor(" << i << L")\\% Processor Time";
+
+            status = PdhAddEnglishCounterW(query, path.str().c_str(), 0, &counters[i]);
+            if (status != ERROR_SUCCESS) 
+            {
+                PdhCloseQuery(query);
+                query = NULL;
+                counters.clear();
+                return false;
+            }
         }
-        
+
         status = PdhCollectQueryData(query);
         if (status != ERROR_SUCCESS) 
         {
             PdhCloseQuery(query);
             query = NULL;
-            counter = NULL;
+            counters.clear();
             return false;
         }
-        
-        cpuInfo.UsagePercent = "0.0";
+
         return true;
     }
-    
+
     status = PdhCollectQueryData(query);
     if (status != ERROR_SUCCESS) 
     {
         PdhCloseQuery(query);
         query = NULL;
-        counter = NULL;
+        counters.clear();
         return false;
     }
-    
-    PDH_FMT_COUNTERVALUE counterVal;
-    DWORD counterType;
-    status = PdhGetFormattedCounterValue(counter, PDH_FMT_DOUBLE, &counterType, &counterVal);
-    if (status != ERROR_SUCCESS) 
+
+    double total = 0.0;
+    int validCoreCount = 0;
+
+    for (DWORD i = 0; i < coreCount; ++i)
     {
-        return false;
+        PDH_FMT_COUNTERVALUE counterVal;
+        DWORD counterType;
+
+        status = PdhGetFormattedCounterValue(counters[i], PDH_FMT_DOUBLE, &counterType, &counterVal);
+        if (status == ERROR_SUCCESS) 
+        {
+            std::ostringstream oss;
+            oss << std::fixed << std::setprecision(2) << counterVal.doubleValue;
+            cpuInfo.CoreUsagePercents[i] = oss.str() + " %";
+
+            total += counterVal.doubleValue;
+            ++validCoreCount;
+        }
+        else 
+        {
+            cpuInfo.CoreUsagePercents[i] = "N/A";
+        }
     }
-    
-    std::ostringstream oss;
-    oss << std::fixed << std::setprecision(2) << counterVal.doubleValue;
-    cpuInfo.UsagePercent = oss.str();
-    
+
+    if (validCoreCount > 0)
+    {
+        std::ostringstream avg;
+        avg << std::fixed << std::setprecision(2) << (total / validCoreCount);
+        cpuInfo.UsagePercent = avg.str() + " %";
+    }
+    else
+    {
+        cpuInfo.UsagePercent = "N/A";
+    }
+
     return true;
 }
 
