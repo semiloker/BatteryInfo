@@ -1,5 +1,4 @@
 #include "../include/main.h"
-#include <thread>
 
 const char win_bi::szClassName[] = "BatteryInfo";
 
@@ -35,7 +34,7 @@ bool win_bi::Create(int nCmdShow)
     initdwrite_bi = new init_dwrite_bi();
     draw_bibi_bi = new draw_batteryinfo_bi();
     ru_bi = new resource_usage_bi();
-    ov_bi = new overlay_bi(NULL, NULL, {20, 500, 400, 800}, "Test");
+    ov_bi = new overlay_bi(NULL, NULL, {20, 20, 400, 800}, "Test");
     
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);

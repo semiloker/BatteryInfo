@@ -87,7 +87,8 @@ void resource_usage_bi::cleanup()
 {
     static PDH_HQUERY& query = []() -> PDH_HQUERY& { static PDH_HQUERY q = NULL; return q; }();
     
-    if (query != NULL) {
+    if (query != NULL) 
+    {
         PdhCloseQuery(query);
         query = NULL;
     }
