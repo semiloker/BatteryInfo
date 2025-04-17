@@ -9,7 +9,7 @@ BIN_DIR = bin
 SRC = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRC))
 
-LIBS = -lsetupapi -lole32 -loleaut32 -ld2d1 -ldwrite -ldwmapi -lpdh
+LIBS = -lsetupapi -lole32 -loleaut32 -ld2d1 -ldwrite -ldwmapi -lpdh	
 
 $(TARGET): $(OBJ) | $(BIN_DIR)
 	$(CC) $(CFLAGS) $(OBJ) -o $(TARGET) $(LIBS)

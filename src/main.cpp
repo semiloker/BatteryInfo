@@ -156,8 +156,9 @@ void win_bi::OnPaint(HWND hwnd)
     if (pRenderTarget)
     {
         pRenderTarget->BeginDraw();
-        pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::Black));
-
+        // pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::Black));
+        
+        draw_bibi_bi->initBrush(pRenderTarget);
         // bi_bi->PrintAllWinD2D(pRenderTarget, 20, 30);
         initdwrite_bi->InitGraph();
         draw_bibi_bi->drawHeaderBatteryInfoD2D(pRenderTarget, bi_bi, initdwrite_bi, 20, 30, 24);
@@ -370,6 +371,7 @@ void win_bi::OnGetMinMaxInfo(LPARAM lParam)
 void win_bi::OnDestroy() 
 {
     ru_bi->cleanup();
+    draw_bibi_bi->~draw_batteryinfo_bi();
     initdwrite_bi->CleanupDirectWrite();
     KillTimer(hwnd, 1);
     KillTimer(hwnd, 2);

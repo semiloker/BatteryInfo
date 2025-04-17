@@ -1,27 +1,21 @@
 #include "../include/draw_batteryinfo_bi.h"
 
-void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget* pRT, batteryinfo_bi* bi_bi, init_dwrite_bi* initdwrite_bi, int startX, int startY, int lineHeight)
+bool draw_batteryinfo_bi::initBrush(ID2D1HwndRenderTarget* pRT)
 {
-    D2D1_SIZE_F rtSize = pRT->GetSize();
-    FLOAT maxWidth = rtSize.width;
-
-    D2D1_COLOR_F textColor = D2D1::ColorF(0.1f, 0.1f, 0.1f);            // Темно-сірий текст
-    D2D1_COLOR_F labelColor = D2D1::ColorF(0.4f, 0.4f, 0.4f);           // Сірий для назв
-    D2D1_COLOR_F separatorColor = D2D1::ColorF(0.8f, 0.8f, 0.8f);       // Світло-сірий розділювач
-    D2D1_COLOR_F backgroundColor = D2D1::ColorF(0.98f, 0.98f, 0.98f);   // Майже білий фон
-    D2D1_COLOR_F headerColor = D2D1::ColorF(0.2f, 0.4f, 0.8f);          // Акцент (синій)
-
-    pRT->Clear(backgroundColor);
-
-    ID2D1SolidColorBrush* pLabelBrush = nullptr;
-    ID2D1SolidColorBrush* pValueBrush = nullptr;
-    ID2D1SolidColorBrush* pHeaderBrush = nullptr;
-    ID2D1SolidColorBrush* pSeparatorBrush = nullptr;
-
     pRT->CreateSolidColorBrush(labelColor, &pLabelBrush);
     pRT->CreateSolidColorBrush(textColor, &pValueBrush);
     pRT->CreateSolidColorBrush(headerColor, &pHeaderBrush);
     pRT->CreateSolidColorBrush(separatorColor, &pSeparatorBrush);
+    
+    return true;
+}
+
+void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget* pRT, batteryinfo_bi* bi_bi, init_dwrite_bi* initdwrite_bi, int startX, int startY, int lineHeight)
+{
+    D2D1_SIZE_F rtSize = pRT->GetSize();
+    maxWidth = rtSize.width;
+
+    pRT->Clear(backgroundColor);
 
     std::map<std::wstring, std::vector<std::pair<std::wstring, std::wstring>>> categories = {
         {L"Basic Info", {
@@ -96,10 +90,9 @@ void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget* pRT, b
         }
         y += 12;
     }
+}
 
-    // clear
-    pLabelBrush->Release();
-    pValueBrush->Release();
-    pHeaderBrush->Release();
-    pSeparatorBrush->Release();
+void drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi)
+{
+
 }
