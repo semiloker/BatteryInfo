@@ -1,5 +1,4 @@
 #include "../include/main.h"
-#include <string>
 
 const char win_bi::szClassName[] = "BatteryInfo";
 
@@ -135,6 +134,8 @@ LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
                     break;
             }
         break;
+        case WM_ERASEBKGND:
+            return 1;
         case WM_DESTROY:
             OutputDebugString("WM_DESTROY received\n");
             pThis->OnDestroy(); 
@@ -151,8 +152,11 @@ void win_bi::OnPaint(HWND hwnd)
     // bi_bi->PrintAllWin(hdc);
     // EndPaint(hwnd, &ps);
 
+    PAINTSTRUCT ps;
+    BeginPaint(hwnd, &ps);
+
     initd2d1_bi->InitDirect2D();
-    ID2D1HwndRenderTarget* pRenderTarget = initd2d1_bi->CreateRenderTarget(hwnd);
+    ID2D1HwndRenderTarget* pRenderTarget = initd2d1_bi->GetOrCreateRenderTarget(hwnd);
     if (pRenderTarget)
     {
         pRenderTarget->BeginDraw();
@@ -173,10 +177,17 @@ void win_bi::OnPaint(HWND hwnd)
             draw_bibi_bi->drawHeaderSettingsD2D(pRenderTarget, initdwrite_bi);
         }
 
-        pRenderTarget->EndDraw();
-        pRenderTarget->Release();
+        HRESULT hr = pRenderTarget->EndDraw();
+        if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
+        {
+            initd2d1_bi->DiscardRenderTarget();
+        }
+        // pRenderTarget->EndDraw();
+        // pRenderTarget->Release();
     }
-    ValidateRect(hwnd, nullptr);
+
+    EndPaint(hwnd, &ps);
+    // ValidateRect(hwnd, nullptr);
 }
 
 void win_bi::AddTrayIcon() 
@@ -268,7 +279,8 @@ void win_bi::OnCommand(WPARAM wParam)
 
 void win_bi::OnResize(WPARAM wParam)
 {
-
+    initd2d1_bi->ResizeRenderTarget(hwnd);
+    InvalidateRect(hwnd, nullptr, FALSE);
 }
 
 void win_bi::UpdateOverlayText()

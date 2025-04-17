@@ -31,7 +31,7 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    wc.hbrBackground = NULL;
     
     RegisterClassA(&wc);
 
@@ -57,7 +57,7 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
         return;
     }
 
-    SetLayeredWindowAttributes(g_hwnd, RGB(0, 0, 0), 1, LWA_COLORKEY);
+    SetLayeredWindowAttributes(g_hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
 
     g_hFont = CreateFontA(
         14,                         // Font height
@@ -196,6 +196,7 @@ void overlay_bi::UpdateText(const std::string& newText)
 {
     g_text = newText;
 
-    InvalidateRect(g_hwnd, NULL, TRUE);
-    UpdateWindow(g_hwnd);
+    HDC hdc = GetDC(g_hwnd);
+    RenderText(g_hwnd);
+    ReleaseDC(g_hwnd, hdc);
 }
