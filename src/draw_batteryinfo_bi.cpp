@@ -10,12 +10,89 @@ bool draw_batteryinfo_bi::initBrush(ID2D1HwndRenderTarget* pRT)
     return true;
 }
 
+bool draw_batteryinfo_bi::clearBackground(ID2D1HwndRenderTarget* pRT)
+{
+    pRT->Clear(backgroundColor);
+    return true;
+}
+
+bool draw_batteryinfo_bi::isCursorInBatteryStatus(POINT cursorPos)
+{
+    return (cursorPos.x >= rectBatteryStatus.left && cursorPos.x <= rectBatteryStatus.right &&
+            cursorPos.y >= rectBatteryStatus.top && cursorPos.y <= rectBatteryStatus.bottom);
+}
+
+bool draw_batteryinfo_bi::isCursorInSettings(POINT cursorPos)
+{
+    return (cursorPos.x >= rectSettings.left && cursorPos.x <= rectSettings.right &&
+            cursorPos.y >= rectSettings.top && cursorPos.y <= rectSettings.bottom);
+}
+
+void draw_batteryinfo_bi::drawHeaders(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, int startX, int startY, int lineHeight)
+{
+    std::wstring header_battery_status = L"Battery Status";
+    std::wstring header_settings = L"Settings";
+
+    float currentX = (float)startX;
+    float currentY = (float)startY;
+
+    int headerIndex = 0;
+
+    pRT->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
+
+    auto drawHeaderWithBox = [&](const std::wstring& text) {
+        IDWriteTextLayout* pTextLayout = nullptr;
+        HRESULT hr = initdwrite_bi->pDWriteFactory->CreateTextLayout(
+            text.c_str(),
+            static_cast<UINT32>(text.length()),
+            initdwrite_bi->pTextFormatHeader,
+            1000.0f,
+            100.0f,
+            &pTextLayout
+        );
+
+        if (SUCCEEDED(hr) && pTextLayout)
+        {
+            DWRITE_TEXT_METRICS metrics;
+            if (SUCCEEDED(pTextLayout->GetMetrics(&metrics)))
+            {
+                float width = metrics.width;
+                float height = metrics.height;
+
+                D2D1_RECT_F rect = D2D1::RectF(currentX, currentY, currentX + width, currentY + height);
+
+                if (headerIndex == 0)
+                    rectBatteryStatus = rect;
+                else if (headerIndex == 1)
+                    rectSettings = rect;
+
+                pRT->DrawText(
+                    text.c_str(),
+                    static_cast<UINT32>(text.length()),
+                    initdwrite_bi->pTextFormatHeader,
+                    rect,
+                    pHeaderBrush
+                );
+
+                pRT->DrawRectangle(rect, pHeaderBrush);
+
+                currentX += width + 30.0f;
+                headerIndex++;
+            }
+            pTextLayout->Release();
+        }
+    };
+
+    drawHeaderWithBox(header_battery_status);
+    drawHeaderWithBox(header_settings);
+}
+
 void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget* pRT, batteryinfo_bi* bi_bi, init_dwrite_bi* initdwrite_bi, int startX, int startY, int lineHeight)
 {
     D2D1_SIZE_F rtSize = pRT->GetSize();
     maxWidth = rtSize.width;
 
-    pRT->Clear(backgroundColor);
+    // pRT->Clear(backgroundColor);
 
     std::map<std::wstring, std::vector<std::pair<std::wstring, std::wstring>>> categories = {
         {L"Basic Info", {
@@ -45,14 +122,6 @@ void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget* pRT, b
 
     int y = startY;
 
-    std::wstring header = L"Battery Status";
-    pRT->DrawText(
-        header.c_str(),
-        static_cast<UINT32>(header.length()),
-        initdwrite_bi->pTextFormatHeader,
-        D2D1::RectF((FLOAT)startX, (FLOAT)y, maxWidth, (FLOAT)(y + lineHeight + 8)),
-        pHeaderBrush
-    );
     y += lineHeight + 16;
 
     for (const auto& category : categories)
@@ -92,7 +161,14 @@ void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget* pRT, b
     }
 }
 
-void drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi)
+void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi)
 {
-
+    std::wstring settingsTitle = L"Settings Page (stub)";
+    pRT->DrawText(
+        settingsTitle.c_str(),
+        (UINT32)settingsTitle.length(),
+        initdwrite_bi->pTextFormatValue,
+        D2D1::RectF(20, 80, maxWidth, 120),
+        pValueBrush
+    );
 }

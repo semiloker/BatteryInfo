@@ -3,6 +3,7 @@
 
 #include <minwindef.h>
 #include <windows.h>
+#include <windowsx.h>
 #include <shellapi.h>
 #include <string>
 
@@ -57,6 +58,8 @@ private:
     NOTIFYICONDATA nid;
     HINSTANCE hInstance;
     HWND hwnd;
+
+    POINT pt;
 
     bool isMinimized = false;
 

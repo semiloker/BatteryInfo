@@ -161,7 +161,17 @@ void win_bi::OnPaint(HWND hwnd)
         draw_bibi_bi->initBrush(pRenderTarget);
         // bi_bi->PrintAllWinD2D(pRenderTarget, 20, 30);
         initdwrite_bi->InitGraph();
-        draw_bibi_bi->drawHeaderBatteryInfoD2D(pRenderTarget, bi_bi, initdwrite_bi, 20, 30, 24);
+        draw_bibi_bi->clearBackground(pRenderTarget);
+        draw_bibi_bi->drawHeaders(pRenderTarget, initdwrite_bi);
+
+        if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::BATTERY_INFO)
+        {
+            draw_bibi_bi->drawHeaderBatteryInfoD2D(pRenderTarget, bi_bi, initdwrite_bi, 20, 30, 24);
+        }
+        else if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::SETTINGS)
+        {
+            draw_bibi_bi->drawHeaderSettingsD2D(pRenderTarget, initdwrite_bi);
+        }
 
         pRenderTarget->EndDraw();
         pRenderTarget->Release();
@@ -305,12 +315,22 @@ void win_bi::OnKeyUp(WPARAM wParam)
 
 void win_bi::OnMouseMove(WPARAM wParam, LPARAM lParam)
 {
-
+    GetCursorPos(&pt);
+    ScreenToClient(hwnd, &pt);
 }
 
 void win_bi::OnLeftButtonDown(WPARAM wParam, LPARAM lParam)
 {
-
+    if (draw_bibi_bi->isCursorInBatteryStatus(pt)) 
+    {
+        draw_bibi_bi->selectedTab = draw_batteryinfo_bi::BATTERY_INFO;
+        InvalidateRect(hwnd, nullptr, TRUE);
+    }
+    if (draw_bibi_bi->isCursorInSettings(pt)) 
+    {
+        draw_bibi_bi->selectedTab = draw_batteryinfo_bi::SETTINGS;
+        InvalidateRect(hwnd, nullptr, TRUE);
+    }
 }
 
 void win_bi::OnRightButtonDown(WPARAM wParam, LPARAM lParam)
