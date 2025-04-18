@@ -8,11 +8,21 @@ overlay_bi::overlay_bi(HWND g_hwnd, HFONT g_hFont, RECT g_textRectPos, std::stri
     instance = this;
 }
 
-overlay_bi::~overlay_bi() 
+overlay_bi::~overlay_bi()
 {
+    if (g_hwnd)
+    {
+        DestroyWindow(g_hwnd);
+        g_hwnd = nullptr;
+    }
+
     if (g_hFont)
+    {
         DeleteObject(g_hFont);
+        g_hFont = nullptr;
+    }
 }
+
 
 LRESULT CALLBACK overlay_bi::StaticWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     if (instance) 
@@ -33,8 +43,11 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     
-    RegisterClassA(&wc);
-
+    if (!GetClassInfoA(hInstance, CLASS_NAME, &wc))
+    {
+        RegisterClassA(&wc);
+    }
+    
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
