@@ -331,6 +331,12 @@ void win_bi::OnLeftButtonDown(WPARAM wParam, LPARAM lParam)
         draw_bibi_bi->selectedTab = draw_batteryinfo_bi::SETTINGS;
         InvalidateRect(hwnd, nullptr, TRUE);
     }
+
+    if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::SETTINGS && 
+        draw_bibi_bi->handleSwitchClick(pt)) {
+        InvalidateRect(hwnd, nullptr, TRUE);
+    }
+
 }
 
 void win_bi::OnRightButtonDown(WPARAM wParam, LPARAM lParam)

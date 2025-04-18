@@ -7,6 +7,10 @@ bool draw_batteryinfo_bi::initBrush(ID2D1HwndRenderTarget *pRT)
     pRT->CreateSolidColorBrush(headerColor, &pHeaderBrush);
     pRT->CreateSolidColorBrush(separatorColor, &pSeparatorBrush);
 
+    pRT->CreateSolidColorBrush(D2D1::ColorF(0.2f, 0.6f, 0.3f), &pSwitchOnBrush);    // Зелений для ON
+    pRT->CreateSolidColorBrush(D2D1::ColorF(0.7f, 0.7f, 0.7f), &pSwitchOffBrush);   // Сірий для OFF
+    pRT->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 1.0f), &pSwitchKnobBrush);  // Білий для кнопки
+
     return true;
 }
 
@@ -163,13 +167,148 @@ void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget *pRT, b
     }
 }
 
-void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget *pRT, init_dwrite_bi *initdwrite_bi)
+void draw_batteryinfo_bi::drawToggleSwitch(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, 
+                                         float x, float y, bool& toggleState, const std::wstring& labelText)
 {
-    std::wstring settingsTitle = L"Settings Page (stub)";
+    D2D1_RECT_F textRect = D2D1::RectF(x, y, x + 250, y + 24);
+    pRT->DrawText(
+        labelText.c_str(),
+        (UINT32)labelText.length(),
+        initdwrite_bi->pTextFormatLabel,
+        textRect,
+        pLabelBrush
+    );
+    
+    const float switchWidth = 48.0f;
+    const float switchHeight = 24.0f;
+    const float knobSize = switchHeight - 6.0f;
+    const float switchX = x + 260;
+    
+    D2D1_ROUNDED_RECT switchRect = {
+        D2D1::RectF(switchX, y + 2, switchX + switchWidth, y + switchHeight + 2),
+        switchHeight / 2,
+        switchHeight / 2 
+    };
+    
+    SwitchRect hitRect = 
+    {
+        switchRect.rect,
+        &toggleState
+    };
+    switchRects.push_back(hitRect);
+    
+    pRT->FillRoundedRectangle(switchRect, toggleState ? pSwitchOnBrush : pSwitchOffBrush);
+    
+    float knobX = toggleState ? 
+        (switchX + switchWidth - knobSize - 3.0f) : (switchX + 3.0f);
+    
+    D2D1_ELLIPSE knob = {
+        D2D1::Point2F(knobX + knobSize/2, y + 2 + switchHeight/2),
+        knobSize/2,
+        knobSize/2
+    };
+    
+    pRT->FillEllipse(knob, pSwitchKnobBrush);
+    
+    if (toggleState) 
+    {
+        ID2D1SolidColorBrush* pHighlightBrush;
+        pRT->CreateSolidColorBrush(D2D1::ColorF(0.3f, 0.7f, 0.4f), &pHighlightBrush);
+        D2D1_ROUNDED_RECT highlightRect = {
+            D2D1::RectF(switchX + 1, y + 3, switchX + switchWidth - 1, y + switchHeight + 1),
+            (switchHeight - 2) / 2,
+            (switchHeight - 2) / 2
+        };
+        pRT->DrawRoundedRectangle(highlightRect, pHighlightBrush, 1.0f);
+        pHighlightBrush->Release();
+    }
+}
+
+bool draw_batteryinfo_bi::handleSwitchClick(POINT cursorPos)
+{
+    for (size_t i = 0; i < switchRects.size(); i++) {
+        if (cursorPos.x >= switchRects[i].rect.left && 
+            cursorPos.x <= switchRects[i].rect.right &&
+            cursorPos.y >= switchRects[i].rect.top && 
+            cursorPos.y <= switchRects[i].rect.bottom) {
+            
+            *(switchRects[i].pState) = !*(switchRects[i].pState);
+            return true;
+        }
+    }
+    return false;
+}
+
+void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi)
+{
+    D2D1_SIZE_F rtSize = pRT->GetSize();
+    maxWidth = rtSize.width;
+    
+    switchRects.clear();
+    
+    std::wstring settingsTitle = L"Налаштування";
     pRT->DrawText(
         settingsTitle.c_str(),
         (UINT32)settingsTitle.length(),
-        initdwrite_bi->pTextFormatValue,
+        initdwrite_bi->pTextFormatHeader,
         D2D1::RectF(20, 80, maxWidth, 120),
+        pHeaderBrush);
+    
+    static bool showBatteryPercentage = true;
+    static bool enableNotifications = false;
+    static bool lowBatteryAlert = true;
+    static bool startWithWindows = false;
+    static bool minimizeToTray = true;
+    static bool darkTheme = false;
+    
+    pRT->DrawLine(
+        D2D1::Point2F(20.0f, 125.0f),
+        D2D1::Point2F(maxWidth - 20.0f, 125.0f),
+        pSeparatorBrush,
+        1.0f);
+    
+    std::wstring displayGroup = L"Відображення";
+    pRT->DrawText(
+        displayGroup.c_str(),
+        (UINT32)displayGroup.length(),
+        initdwrite_bi->pTextFormatValue,
+        D2D1::RectF(20, 140, maxWidth, 160),
         pValueBrush);
+    
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 170, showBatteryPercentage, L"Показувати відсоток заряду");
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 210, darkTheme, L"Темна тема");
+    
+    pRT->DrawLine(
+        D2D1::Point2F(20.0f, 250.0f),
+        D2D1::Point2F(maxWidth - 20.0f, 250.0f),
+        pSeparatorBrush,
+        1.0f);
+    
+    std::wstring notificationGroup = L"Сповіщення";
+    pRT->DrawText(
+        notificationGroup.c_str(),
+        (UINT32)notificationGroup.length(),
+        initdwrite_bi->pTextFormatValue,
+        D2D1::RectF(20, 265, maxWidth, 285),
+        pValueBrush);
+    
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 295, enableNotifications, L"Увімкнути сповіщення");
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 335, lowBatteryAlert, L"Попередження про низький заряд");
+    
+    pRT->DrawLine(
+        D2D1::Point2F(20.0f, 375.0f),
+        D2D1::Point2F(maxWidth - 20.0f, 375.0f),
+        pSeparatorBrush,
+        1.0f);
+    
+    std::wstring behaviorGroup = L"Поведінка програми";
+    pRT->DrawText(
+        behaviorGroup.c_str(),
+        (UINT32)behaviorGroup.length(),
+        initdwrite_bi->pTextFormatValue,
+        D2D1::RectF(20, 390, maxWidth, 410),
+        pValueBrush);
+    
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 420, startWithWindows, L"Запускати з Windows");
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 460, minimizeToTray, L"Згортати до трею");
 }

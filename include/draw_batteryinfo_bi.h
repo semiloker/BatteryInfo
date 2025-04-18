@@ -21,6 +21,11 @@ public:
         pValueBrush = nullptr;
         pHeaderBrush = nullptr;
         pSeparatorBrush = nullptr;
+
+        pSwitchOnBrush = nullptr;
+        pSwitchOffBrush = nullptr;
+        pSwitchKnobBrush = nullptr;
+    
     }
 
     ~draw_batteryinfo_bi()
@@ -29,6 +34,10 @@ public:
         pValueBrush->Release();
         pHeaderBrush->Release();
         pSeparatorBrush->Release();    
+
+        if (pSwitchOnBrush) pSwitchOnBrush->Release();
+        if (pSwitchOffBrush) pSwitchOffBrush->Release();
+        if (pSwitchKnobBrush) pSwitchKnobBrush->Release();    
     }
 
     enum selected_option
@@ -49,6 +58,10 @@ public:
     bool isCursorInBatteryStatus(POINT cursorPos);
     bool isCursorInSettings(POINT cursorPos);
 
+    void drawToggleSwitch(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, 
+                      float x, float y, bool& toggleState, const std::wstring& labelText);
+    bool handleSwitchClick(POINT cursorPos);
+
     D2D1_RECT_F rectBatteryStatus{};
     D2D1_RECT_F rectSettings{};
 private:
@@ -61,8 +74,21 @@ private:
     ID2D1SolidColorBrush* pLabelBrush;
     ID2D1SolidColorBrush* pValueBrush;
     ID2D1SolidColorBrush* pHeaderBrush;
+    
     ID2D1SolidColorBrush* pSeparatorBrush;
+    
+    ID2D1SolidColorBrush* pSwitchOnBrush;
+    ID2D1SolidColorBrush* pSwitchOffBrush;
+    ID2D1SolidColorBrush* pSwitchKnobBrush;
 
+    struct SwitchRect 
+    {
+        D2D1_RECT_F rect;
+        bool* pState;
+    };
+    
+    std::vector<SwitchRect> switchRects;
+    
     FLOAT maxWidth = 0;
 };
 
