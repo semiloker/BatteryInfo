@@ -239,14 +239,14 @@ bool draw_batteryinfo_bi::handleSwitchClick(POINT cursorPos)
     return false;
 }
 
-void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi)
+void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, overlay_bi* ov_bi)
 {
     D2D1_SIZE_F rtSize = pRT->GetSize();
     maxWidth = rtSize.width;
     
     switchRects.clear();
     
-    std::wstring settingsTitle = L"Налаштування";
+    std::wstring settingsTitle = L"Settings";
     pRT->DrawText(
         settingsTitle.c_str(),
         (UINT32)settingsTitle.length(),
@@ -257,17 +257,11 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
     static bool showBatteryPercentage = true;
     static bool enableNotifications = false;
     static bool lowBatteryAlert = true;
-    static bool startWithWindows = false;
-    static bool minimizeToTray = true;
+    static bool start_With_Windows = false;
+    static bool minimize_To_Tray = true;
     static bool darkTheme = false;
-    
-    pRT->DrawLine(
-        D2D1::Point2F(20.0f, 125.0f),
-        D2D1::Point2F(maxWidth - 20.0f, 125.0f),
-        pSeparatorBrush,
-        1.0f);
-    
-    std::wstring displayGroup = L"Відображення";
+
+    std::wstring displayGroup = L"Overlay";
     pRT->DrawText(
         displayGroup.c_str(),
         (UINT32)displayGroup.length(),
@@ -275,16 +269,16 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
         D2D1::RectF(20, 140, maxWidth, 160),
         pValueBrush);
     
-    drawToggleSwitch(pRT, initdwrite_bi, 40, 170, showBatteryPercentage, L"Показувати відсоток заряду");
-    drawToggleSwitch(pRT, initdwrite_bi, 40, 210, darkTheme, L"Темна тема");
-    
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 170, ov_bi->show_on_screen_display, L"Show On-Screen Display");
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 210, darkTheme, L"test");
+
     pRT->DrawLine(
         D2D1::Point2F(20.0f, 250.0f),
         D2D1::Point2F(maxWidth - 20.0f, 250.0f),
         pSeparatorBrush,
         1.0f);
     
-    std::wstring notificationGroup = L"Сповіщення";
+    std::wstring notificationGroup = L"test";
     pRT->DrawText(
         notificationGroup.c_str(),
         (UINT32)notificationGroup.length(),
@@ -292,8 +286,8 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
         D2D1::RectF(20, 265, maxWidth, 285),
         pValueBrush);
     
-    drawToggleSwitch(pRT, initdwrite_bi, 40, 295, enableNotifications, L"Увімкнути сповіщення");
-    drawToggleSwitch(pRT, initdwrite_bi, 40, 335, lowBatteryAlert, L"Попередження про низький заряд");
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 295, enableNotifications, L"test");
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 335, lowBatteryAlert, L"test");
     
     pRT->DrawLine(
         D2D1::Point2F(20.0f, 375.0f),
@@ -301,7 +295,7 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
         pSeparatorBrush,
         1.0f);
     
-    std::wstring behaviorGroup = L"Поведінка програми";
+    std::wstring behaviorGroup = L"test";
     pRT->DrawText(
         behaviorGroup.c_str(),
         (UINT32)behaviorGroup.length(),
@@ -309,6 +303,6 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
         D2D1::RectF(20, 390, maxWidth, 410),
         pValueBrush);
     
-    drawToggleSwitch(pRT, initdwrite_bi, 40, 420, startWithWindows, L"Запускати з Windows");
-    drawToggleSwitch(pRT, initdwrite_bi, 40, 460, minimizeToTray, L"Згортати до трею");
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 420, start_With_Windows, L"Start with Windows");
+    drawToggleSwitch(pRT, initdwrite_bi, 40, 460, minimize_To_Tray, L"Minimize to tray");
 }

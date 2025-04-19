@@ -21,6 +21,7 @@ public:
     ~overlay_bi();
 
     void CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd = NULL);
+    void DestroyOverlayWindow();
     void ForceTopMost();
     void RenderText(HWND hwnd);
     void UpdateText(const std::string& newText);

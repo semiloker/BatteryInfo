@@ -10,7 +10,22 @@ overlay_bi::overlay_bi(HWND g_hwnd, HFONT g_hFont, RECT g_textRectPos, std::stri
 
 overlay_bi::~overlay_bi()
 {
-    if (g_hwnd)
+    if (g_hwnd && IsWindow(g_hwnd))
+    {
+        DestroyWindow(g_hwnd);
+    }
+    g_hwnd = nullptr;
+
+    if (g_hFont)
+    {
+        DeleteObject(g_hFont);
+        g_hFont = nullptr;
+    }
+}
+
+void overlay_bi::DestroyOverlayWindow()
+{
+    if (g_hwnd && IsWindow(g_hwnd))
     {
         DestroyWindow(g_hwnd);
         g_hwnd = nullptr;
@@ -34,25 +49,30 @@ LRESULT CALLBACK overlay_bi::StaticWindowProc(HWND hwnd, UINT uMsg, WPARAM wPara
 
 void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd) 
 {
+    if (g_hwnd != nullptr && IsWindow(g_hwnd)) 
+    {
+        return;
+    }
+
     const char CLASS_NAME[] = "TransparentOverlayClass";
-    
+
     WNDCLASSA wc = {};
     wc.lpfnWndProc = StaticWindowProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-    
+
     if (!GetClassInfoA(hInstance, CLASS_NAME, &wc))
     {
         RegisterClassA(&wc);
     }
-    
+
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
     g_hwnd = CreateWindowExA(
-        WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE,
+        WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOOLWINDOW ,
         CLASS_NAME,
         "Transparent Overlay",
         WS_POPUP,
@@ -151,7 +171,7 @@ LRESULT CALLBACK overlay_bi::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         return 0;
 
     case WM_DESTROY:
-        PostQuitMessage(0);
+        // PostQuitMessage(0);
         return 0;
 
     default:

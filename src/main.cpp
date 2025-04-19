@@ -170,9 +170,15 @@ void win_bi::OnPaint(HWND hwnd)
         }
         else if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::SETTINGS)
         {
-            draw_bibi_bi->drawHeaderSettingsD2D(pRenderTarget, initdwrite_bi);
+            draw_bibi_bi->drawHeaderSettingsD2D(pRenderTarget, initdwrite_bi, ov_bi);
         }
 
+        
+        if (ov_bi->show_on_screen_display == true)
+            ov_bi->CreateOverlayWindow(hInstance, hwnd);
+        if (ov_bi->show_on_screen_display == false)
+            ov_bi->DestroyOverlayWindow();
+        
         pRenderTarget->EndDraw();
         pRenderTarget->Release();
     }
@@ -304,8 +310,8 @@ void win_bi::OnKeyDown(WPARAM wParam)
 {
     if (wParam == VK_ESCAPE)
         SendMessage(hwnd, WM_CLOSE, 0, 0);
-    else if (wParam == 'N')
-        ov_bi->CreateOverlayWindow(hInstance, hwnd);
+    // else if (wParam == 'N')
+    //     ov_bi->CreateOverlayWindow(hInstance, hwnd);
 }
 
 void win_bi::OnKeyUp(WPARAM wParam)
@@ -333,10 +339,10 @@ void win_bi::OnLeftButtonDown(WPARAM wParam, LPARAM lParam)
     }
 
     if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::SETTINGS && 
-        draw_bibi_bi->handleSwitchClick(pt)) {
+        draw_bibi_bi->handleSwitchClick(pt)) 
+    {
         InvalidateRect(hwnd, nullptr, TRUE);
     }
-
 }
 
 void win_bi::OnRightButtonDown(WPARAM wParam, LPARAM lParam)
@@ -398,6 +404,7 @@ void win_bi::OnDestroy()
 {
     ru_bi->cleanup();
     draw_bibi_bi->~draw_batteryinfo_bi();
+    ov_bi->~overlay_bi();
     initdwrite_bi->CleanupDirectWrite();
     KillTimer(hwnd, 1);
     KillTimer(hwnd, 2);
