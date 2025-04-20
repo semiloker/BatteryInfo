@@ -265,16 +265,7 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
 
     float y = 66.0f - scrollOffsetY;
 
-    // std::wstring settingsTitle = L"Settings";
-    // pRT->DrawText(
-    //     settingsTitle.c_str(),
-    //     (UINT32)settingsTitle.length(),
-    //     initdwrite_bi->pTextFormatHeader,
-    //     D2D1::RectF(20, y, maxWidth, y + 40),
-    //     pHeaderBrush);
-    // y += 60;
-
-    // CPU + RAM
+    // Overlay group
     std::wstring displayGroup = L"Overlay";
     pRT->DrawText(displayGroup.c_str(), (UINT32)displayGroup.length(),
         initdwrite_bi->pTextFormatValue,
@@ -283,10 +274,36 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
 
     drawToggleSwitch(pRT, initdwrite_bi, 40, y, ov_bi->show_on_screen_display, L"Show On-Screen Display");
     y += 40;
+
+    y += 10;
+    pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
+    y += 20;
+
+    // CPU
+    std::wstring cpuGroup = L"CPU";
+    pRT->DrawText(cpuGroup.c_str(), (UINT32)cpuGroup.length(),
+        initdwrite_bi->pTextFormatValue,
+        D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
+    y += 30;
+
     drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_UsagePercent, L"CPU Usage Percent");
     y += 40;
     drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_CoreUsagePercents, L"CPU Core Usage Percents");
     y += 40;
+    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_cpuName, L"CPU Name");
+    y += 40;
+    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_architecture, L"CPU Architecture");
+    y += 60;
+
+    pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
+    y += 20;
+
+    // RAM
+    std::wstring ramGroup = L"RAM";
+    pRT->DrawText(ramGroup.c_str(), (UINT32)ramGroup.length(),
+        initdwrite_bi->pTextFormatValue,
+        D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
+    y += 30;
 
     drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_dwMemoryLoad, L"Memory Load");
     y += 40;
@@ -305,6 +322,65 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
     drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullAvailExtendedVirtual, L"Extended Virtual Memory");
     y += 60;
 
+    pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
+    y += 20;
+
+    // Disks
+    // std::wstring diskGroup = L"Disk(s)";
+    // pRT->DrawText(diskGroup.c_str(), (UINT32)diskGroup.length(),
+    //     initdwrite_bi->pTextFormatValue,
+    //     D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
+    // y += 30;
+
+    // int diskIndex = 1;
+    // for (auto& disk : ru_bi->disksInfo)
+    // {
+    //     std::wstring label = L"Disk " + std::to_wstring(diskIndex++);
+    //     pRT->DrawText(label.c_str(), (UINT32)label.length(),
+    //         initdwrite_bi->pTextFormatLabel,
+    //         D2D1::RectF(60, y, maxWidth, y + 20), pValueBrush);
+    //     y += 30;
+
+    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, disk.show_diskLetter, L"Disk Letter");
+    //     y += 40;
+    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, disk.show_totalSpace, L"Total Space");
+    //     y += 40;
+    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, disk.show_freeSpace, L"Free Space");
+    //     y += 40;
+    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, disk.show_usedSpace, L"Used Space");
+    //     y += 40;
+    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, disk.show_usagePercent, L"Usage Percent");
+    //     y += 50;
+    // }
+
+    // pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
+    // y += 20;
+
+    // Network 
+    // std::wstring netGroup = L"Network";
+    // pRT->DrawText(netGroup.c_str(), (UINT32)netGroup.length(),
+    //     initdwrite_bi->pTextFormatValue,
+    //     D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
+    // y += 30;
+
+    // int netIndex = 1;
+    // for (auto& net : ru_bi->networkInfo)
+    // {
+    //     std::wstring label = L"Interface " + std::to_wstring(netIndex++);
+    //     pRT->DrawText(label.c_str(), (UINT32)label.length(),
+    //         initdwrite_bi->pTextFormatLabel,
+    //         D2D1::RectF(60, y, maxWidth, y + 20), pValueBrush);
+    //     y += 30;
+
+    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, net.show_interfaceName, L"Interface Name");
+    //     y += 40;
+    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, net.show_downloadSpeed, L"Download Speed");
+    //     y += 40;
+    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, net.show_uploadSpeed, L"Upload Speed");
+    //     y += 50;
+    // }
+
+    // Behavior
     std::wstring behaviorGroup = L"Behavior";
     pRT->DrawText(behaviorGroup.c_str(), (UINT32)behaviorGroup.length(),
         initdwrite_bi->pTextFormatValue,

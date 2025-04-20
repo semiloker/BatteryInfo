@@ -35,7 +35,7 @@ bool win_bi::Create(int nCmdShow)
     initdwrite_bi = new init_dwrite_bi();
     draw_bibi_bi = new draw_batteryinfo_bi();
     ru_bi = new resource_usage_bi();
-    ov_bi = new overlay_bi(NULL, NULL, {20, 20, 400, 800}, "nullptr");
+    ov_bi = new overlay_bi(NULL, NULL, {20, 20, 1920, 1200}, "nullptr");
     
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -269,35 +269,44 @@ void win_bi::UpdateOverlayText()
 {
     if (ov_bi) 
     {
-        ru_bi->updateRam();
-        ru_bi->updateCpu();
+        ru_bi->updateAll();
 
         std::string newText;
         
-        if (ru_bi->cpuInfo.show_UsagePercent == true)
-            newText += "CPU: " + ru_bi->cpuInfo.UsagePercent + "\n";
-        if (ru_bi->cpuInfo.show_CoreUsagePercents == true)
+        // CPU Info
+        if (ru_bi->cpuInfo.show_cpuName)
+            newText += "CPU Name: " + ru_bi->cpuInfo.cpuName + "\n";
+            
+        if (ru_bi->cpuInfo.show_architecture)
+            newText += "Architecture: " + ru_bi->cpuInfo.architecture + "\n";
+            
+        if (ru_bi->cpuInfo.show_UsagePercent)
+            newText += "\nCPU Usage: " + ru_bi->cpuInfo.UsagePercent + "\n";
+            
+        if (ru_bi->cpuInfo.show_CoreUsagePercents)
         {
-            for (int i = 0; i < ru_bi->cpuInfo.CoreUsagePercents.size(); ++i)
+            for (size_t i = 0; i < ru_bi->cpuInfo.CoreUsagePercents.size(); ++i)
             {
-                newText += "Core(" + std::to_string(i + 1) + "): " + ru_bi->cpuInfo.CoreUsagePercents[i] + "\n";
+                newText += "Core " + std::to_string(i + 1) + ": " + 
+                          ru_bi->cpuInfo.CoreUsagePercents[i] + "\n";
             }
         }
 
+        // RAM Info
         if (ru_bi->ramInfo.show_dwMemoryLoad)
-            newText += "Memory Load: " + ru_bi->ramInfo.dwMemoryLoad + "\n";
+            newText += "\nMemory Load: " + ru_bi->ramInfo.dwMemoryLoad + "\n";
 
         if (ru_bi->ramInfo.show_ullTotalPhys)
-            newText += "Total Physical: " + ru_bi->ramInfo.ullTotalPhys + "\n";
+            newText += "Total RAM: " + ru_bi->ramInfo.ullTotalPhys + "\n";
 
         if (ru_bi->ramInfo.show_ullAvailPhys)
-            newText += "Available Physical: " + ru_bi->ramInfo.ullAvailPhys + "\n";
+            newText += "Available RAM: " + ru_bi->ramInfo.ullAvailPhys + "\n";
 
         if (ru_bi->ramInfo.show_ullTotalPageFile)
-            newText += "Total Page File: " + ru_bi->ramInfo.ullTotalPageFile + "\n";
+            newText += "Total Pagefile: " + ru_bi->ramInfo.ullTotalPageFile + "\n";
 
         if (ru_bi->ramInfo.show_ullAvailPageFile)
-            newText += "Available Page File: " + ru_bi->ramInfo.ullAvailPageFile + "\n";
+            newText += "Available Pagefile: " + ru_bi->ramInfo.ullAvailPageFile + "\n";
 
         if (ru_bi->ramInfo.show_ullTotalVirtual)
             newText += "Total Virtual: " + ru_bi->ramInfo.ullTotalVirtual + "\n";
@@ -307,6 +316,38 @@ void win_bi::UpdateOverlayText()
 
         if (ru_bi->ramInfo.show_ullAvailExtendedVirtual)
             newText += "Extended Virtual: " + ru_bi->ramInfo.ullAvailExtendedVirtual + "\n";
+
+        // Disk Info
+        for (const auto& disk : ru_bi->disksInfo)
+        {
+            if (disk.show_diskLetter)
+                newText += "\nDrive: " + disk.diskLetter + "\n";
+                
+            if (disk.show_totalSpace)
+                newText += "Total Space: " + disk.totalSpace + "\n";
+                
+            if (disk.show_freeSpace)
+                newText += "Free Space: " + disk.freeSpace + "\n";
+                
+            if (disk.show_usedSpace)
+                newText += "Used Space: " + disk.usedSpace + "\n";
+                
+            if (disk.show_usagePercent)
+                newText += "Usage: " + disk.usagePercent + "\n";
+        }
+
+        // Network Info
+        // for (const auto& net : ru_bi->networkInfo)
+        // {
+        //     if (net.show_interfaceName)
+        //         newText += "\nInterface: " + net.interfaceName + "\n";
+                
+        //     if (net.show_downloadSpeed)
+        //         newText += "Download: " + net.downloadSpeed + "\n";
+                
+        //     if (net.show_uploadSpeed)
+        //         newText += "Upload: " + net.uploadSpeed + "\n";
+        // }
 
         ov_bi->UpdateText(newText);
         ov_bi->UpdatePosition();
