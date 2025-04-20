@@ -14,6 +14,9 @@ public:
     std::string g_text;
     static overlay_bi* instance;
 
+    int overlay_pos_x = 20;
+    int overlay_pos_y = 20;
+
     bool show_on_screen_display = false;
 
     overlay_bi(HWND g_hwnd, HFONT g_hFont, RECT g_textRectPos, std::string g_text);

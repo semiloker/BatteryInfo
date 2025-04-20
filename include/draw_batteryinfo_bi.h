@@ -6,6 +6,7 @@
 #include "BatteryInfo.h"
 #include "init_dwrite_bi.h"
 #include "overlay_bi.h"
+#include "resource_usage_bi.h"
 
 class draw_batteryinfo_bi
 {
@@ -26,7 +27,10 @@ public:
         pSwitchOnBrush = nullptr;
         pSwitchOffBrush = nullptr;
         pSwitchKnobBrush = nullptr;
-    
+
+        pScrollBarBrush = nullptr;
+
+        pBackgroundBrush = nullptr;
     }
 
     ~draw_batteryinfo_bi()
@@ -38,7 +42,11 @@ public:
 
         if (pSwitchOnBrush) pSwitchOnBrush->Release();
         if (pSwitchOffBrush) pSwitchOffBrush->Release();
-        if (pSwitchKnobBrush) pSwitchKnobBrush->Release();    
+        if (pSwitchKnobBrush) pSwitchKnobBrush->Release();
+          
+        if (pScrollBarBrush) pScrollBarBrush->Release();
+        
+        if (pBackgroundBrush) pBackgroundBrush->Release();
     }
 
     enum selected_option
@@ -50,7 +58,7 @@ public:
     selected_option selectedTab = BATTERY_INFO;
 
     void drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget* pRT, batteryinfo_bi* bi_bi, init_dwrite_bi* initdwrite_bi, int startX, int startY, int lineHeight);
-    void drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, overlay_bi* ov_bi);
+    void drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, overlay_bi* ov_bi, resource_usage_bi* ru_bi);
     void drawHeaders(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, int startX = 20, int startY = 20, int lineHeight = 24);
 
     bool initBrush(ID2D1HwndRenderTarget* pRT);
@@ -62,6 +70,10 @@ public:
     void drawToggleSwitch(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, 
                       float x, float y, bool& toggleState, const std::wstring& labelText);
     bool handleSwitchClick(POINT cursorPos);
+
+    float scrollOffsetY = 0.0f;
+    float contentHeight = 0.0f;
+    float viewHeight = 0.0f;
 
     D2D1_RECT_F rectBatteryStatus{};
     D2D1_RECT_F rectSettings{};
@@ -81,6 +93,10 @@ private:
     ID2D1SolidColorBrush* pSwitchOnBrush;
     ID2D1SolidColorBrush* pSwitchOffBrush;
     ID2D1SolidColorBrush* pSwitchKnobBrush;
+
+    ID2D1SolidColorBrush* pScrollBarBrush;
+
+    ID2D1SolidColorBrush* pBackgroundBrush;
 
     struct SwitchRect 
     {

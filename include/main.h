@@ -44,6 +44,7 @@ private:
     void OnKeyDown(WPARAM wParam);
     void OnKeyUp(WPARAM wParam);
     void OnMouseMove(WPARAM wParam, LPARAM lParam);
+    void OnMouseWheel(WPARAM wParam, LPARAM lParam);
     void OnLeftButtonDown(WPARAM wParam, LPARAM lParam);
     void OnRightButtonDown(WPARAM wParam, LPARAM lParam);
     void OnTimer(WPARAM wParam);
@@ -51,6 +52,7 @@ private:
     void OnKillFocus(HWND hwnd);
     void OnSysCommand(WPARAM wParam, LPARAM lParam); 
     void OnChar(WPARAM wParam);
+    void OnClose();
     void OnDestroy();
 
     static const char szClassName[];

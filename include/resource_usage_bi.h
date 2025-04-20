@@ -24,6 +24,9 @@ public:
     {
         std::string UsagePercent;
         std::vector<std::string> CoreUsagePercents;
+
+        bool show_UsagePercent = false;
+        bool show_CoreUsagePercents = false;
     };
 
     struct RamInfo
@@ -36,11 +39,25 @@ public:
         std::string ullTotalVirtual;
         std::string ullAvailVirtual;
         std::string ullAvailExtendedVirtual;
+
+        bool show_dwMemoryLoad = false;
+        bool show_ullTotalPhys = false;
+        bool show_ullAvailPhys = false;
+        bool show_ullTotalPageFile = false;
+        bool show_ullAvailPageFile = false;
+        bool show_ullTotalVirtual = false;
+        bool show_ullAvailVirtual = false;
+        bool show_ullAvailExtendedVirtual = false;
+
     };
     
     CpuInfo cpuInfo;
     RamInfo ramInfo;
 
+    bool start_With_Windows = false;
+    bool minimize_To_Tray = false;
+    bool exit_on_key_esc = false;
+    
     bool updateRam();
     bool updateCpu();
 
