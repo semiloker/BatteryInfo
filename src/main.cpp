@@ -123,16 +123,8 @@ LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
                     break;
             }
         break;
-<<<<<<< HEAD
-        case WM_ERASEBKGND:
-            return 1;
-        case WM_DESTROY:
-            OutputDebugString("WM_DESTROY received\n");
-            pThis->OnDestroy(); 
-        break;
-=======
+        case WM_ERASEBKGND:       return 1;
         case WM_DESTROY:          pThis->OnDestroy(); break;
->>>>>>> ba73bc728e55c7daa95bb3eb40bb0a7aef35e01d
         default:                  return DefWindowProc(hwnd, msg, wParam, lParam);
     }
     return 0;
@@ -169,15 +161,6 @@ void win_bi::OnPaint(HWND hwnd)
             draw_bibi_bi->drawHeaderSettingsD2D(pRenderTarget, initdwrite_bi, ov_bi, ru_bi);
         }
 
-<<<<<<< HEAD
-        HRESULT hr = pRenderTarget->EndDraw();
-        if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
-        {
-            initd2d1_bi->DiscardRenderTarget();
-        }
-        // pRenderTarget->EndDraw();
-        // pRenderTarget->Release();
-=======
         draw_bibi_bi->drawHeaders(pRenderTarget, initdwrite_bi);
         
         if (ov_bi->show_on_screen_display == true)
@@ -185,11 +168,14 @@ void win_bi::OnPaint(HWND hwnd)
         if (ov_bi->show_on_screen_display == false)
             ov_bi->DestroyOverlayWindow();
         
-        pRenderTarget->EndDraw();
-        pRenderTarget->Release();
->>>>>>> ba73bc728e55c7daa95bb3eb40bb0a7aef35e01d
+        HRESULT hr = pRenderTarget->EndDraw();
+        if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
+        {
+            initd2d1_bi->DiscardRenderTarget();
+        }
+        // pRenderTarget->EndDraw();
+        // pRenderTarget->Release();
     }
-
     EndPaint(hwnd, &ps);
     // ValidateRect(hwnd, nullptr);
 }
@@ -278,10 +264,9 @@ void win_bi::OnCommand(WPARAM wParam)
 
 void win_bi::OnResize(WPARAM wParam)
 {
-<<<<<<< HEAD
     initd2d1_bi->ResizeRenderTarget(hwnd);
     InvalidateRect(hwnd, nullptr, FALSE);
-=======
+
     if (wParam == SIZE_MINIMIZED)
     {
         if (ru_bi && ru_bi->minimize_To_Tray)
@@ -290,7 +275,6 @@ void win_bi::OnResize(WPARAM wParam)
             AddTrayIcon();
         }
     }
->>>>>>> ba73bc728e55c7daa95bb3eb40bb0a7aef35e01d
 }
 
 void win_bi::UpdateOverlayText()

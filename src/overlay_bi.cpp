@@ -61,18 +61,12 @@ void overlay_bi::CreateOverlayWindow(HINSTANCE hInstance, HWND parentHwnd)
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-<<<<<<< HEAD
     wc.hbrBackground = NULL;
-    
-    RegisterClassA(&wc);
-=======
-    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 
     if (!GetClassInfoA(hInstance, CLASS_NAME, &wc))
     {
         RegisterClassA(&wc);
     }
->>>>>>> ba73bc728e55c7daa95bb3eb40bb0a7aef35e01d
 
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -235,13 +229,7 @@ void overlay_bi::UpdateText(const std::string& newText)
 {
     g_text = newText;
 
-<<<<<<< HEAD
     HDC hdc = GetDC(g_hwnd);
     RenderText(g_hwnd);
     ReleaseDC(g_hwnd, hdc);
 }
-=======
-    InvalidateRect(g_hwnd, NULL, TRUE);
-    UpdateWindow(g_hwnd);
-}
->>>>>>> ba73bc728e55c7daa95bb3eb40bb0a7aef35e01d
