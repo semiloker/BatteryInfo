@@ -1,6 +1,6 @@
 TARGET = bin\battery.exe
 CC = g++
-CFLAGS = -Wall -lgdi32 -lshell32 -mwindows -static -static-libgcc -static-libstdc++ -lwinpthread
+CFLAGS = -Wall -lgdi32 -lshell32 -mwindows -static -static-libgcc -static-libstdc++
 SRC_DIR = src
 INCLUDE_DIR = include
 OBJ_DIR = obj
@@ -9,8 +9,10 @@ BIN_DIR = bin
 SRC = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRC))
 
-LIBS = -lsetupapi -lole32 -loleaut32 -ld2d1 -ldwrite -ldwmapi -lpdh	
-
+LIBS = -lwbemuuid -lole32 -loleaut32 -loleacc \
+       -lgdi32 -lshell32 -lsetupapi -ld2d1 -ldwrite \
+       -ldwmapi -lpdh -liphlpapi -ladvapi32 -lwinpthread
+	   
 $(TARGET): $(OBJ) | $(BIN_DIR)
 	$(CC) $(CFLAGS) $(OBJ) -o $(TARGET) $(LIBS)
 

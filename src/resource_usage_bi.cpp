@@ -5,6 +5,13 @@ bool resource_usage_bi::updateRam()
     MEMORYSTATUSEX statex;
     statex.dwLength = sizeof(statex);
 
+    if (!GlobalMemoryStatusEx(&statex))
+    {
+        DWORD error = GetLastError();
+        std::cerr << "Memory status failed. Error: " << error << std::endl;
+        return false;
+    }
+
     if (GlobalMemoryStatusEx(&statex))
     {
         ramInfo.dwMemoryLoad = std::to_string(statex.dwMemoryLoad) + " %";
@@ -21,7 +28,104 @@ bool resource_usage_bi::updateRam()
     return false;
 }
 
-bool resource_usage_bi::updateCpu() 
+bool resource_usage_bi::updateDisk()
+{
+    DWORD drives = GetLogicalDrives();
+    disksInfo.clear();
+
+    for (char drive = 'A'; drive <= 'Z'; ++drive)
+    {
+        if (drives & (1 << (drive - 'A')))
+        {
+            std::string rootPath = std::string(1, drive) + ":\\";
+            DiskInfo disk;
+            disk.diskLetter = rootPath;
+
+            ULARGE_INTEGER freeBytes, totalBytes, totalFreeBytes;
+            if (GetDiskFreeSpaceExA(rootPath.c_str(), &freeBytes, &totalBytes, &totalFreeBytes))
+            {
+                disk.totalSpace = std::to_string(totalBytes.QuadPart / DIV) + " MB";
+                disk.freeSpace = std::to_string(freeBytes.QuadPart / DIV) + " MB";
+                disk.usedSpace = std::to_string((totalBytes.QuadPart - freeBytes.QuadPart) / DIV) + " MB";
+
+                double usage = (1.0 - (static_cast<double>(freeBytes.QuadPart) / totalBytes.QuadPart)) * 100;
+                std::ostringstream oss;
+                oss << std::fixed << std::setprecision(2) << usage << " %";
+                disk.usagePercent = oss.str();
+
+                disksInfo.push_back(disk);
+            }
+        }
+    }
+    return !disksInfo.empty();
+}
+
+bool resource_usage_bi::updateNetwork()
+{
+    MIB_IFTABLE *pIfTable = NULL;
+    DWORD dwSize = 0;
+
+    if (GetIfTable(pIfTable, &dwSize, FALSE) == ERROR_INSUFFICIENT_BUFFER)
+    {
+        pIfTable = (MIB_IFTABLE *)malloc(dwSize);
+        if (!pIfTable)
+            return false;
+    }
+
+    if (GetIfTable(pIfTable, &dwSize, TRUE) == NO_ERROR)
+    {
+        for (DWORD i = 0; i < pIfTable->dwNumEntries; ++i)
+        {
+            NetworkInfo netInfo;
+            MIB_IFROW row = pIfTable->table[i];
+
+            // Конвертируем имя интерфейса из wide-char
+            char name[256];
+            wcstombs(name, row.wszName, sizeof(name));
+            netInfo.interfaceName = name;
+
+            netInfo.downloadSpeed = std::to_string(row.dwInOctets / 1024) + " KB/s";
+            netInfo.uploadSpeed = std::to_string(row.dwOutOctets / 1024) + " KB/s";
+
+            networkInfo.push_back(netInfo);
+        }
+        free(pIfTable);
+        return true;
+    }
+
+    if (pIfTable)
+        free(pIfTable);
+    return false;
+}
+
+void resource_usage_bi::initCpuInfo()
+{
+    HKEY hKey;
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+                     "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
+                     0, KEY_READ, &hKey) == ERROR_SUCCESS)
+    {
+
+        char cpuName[256];
+        DWORD size = sizeof(cpuName);
+        if (RegQueryValueEx(hKey, "ProcessorNameString", NULL, NULL,
+                            (LPBYTE)cpuName, &size) == ERROR_SUCCESS)
+        {
+            cpuInfo.cpuName = cpuName;
+        }
+        RegCloseKey(hKey);
+    }
+
+    SYSTEM_INFO sysInfo;
+    GetSystemInfo(&sysInfo);
+    cpuInfo.architecture =
+        (sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64) ? "x64" : (sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_ARM) ? "ARM"
+                                                                               : (sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64)  ? "IA64"
+                                                                               : (sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL) ? "x86"
+                                                                                                                                                  : "Unknown";
+}
+
+bool resource_usage_bi::updateCpu()
 {
     static PDH_HQUERY query = NULL;
     static std::vector<PDH_HCOUNTER> counters;
@@ -29,14 +133,14 @@ bool resource_usage_bi::updateCpu()
 
     PDH_STATUS status;
 
-    if (query == NULL) 
+    if (query == NULL)
     {
         SYSTEM_INFO sysInfo;
         GetSystemInfo(&sysInfo);
         coreCount = sysInfo.dwNumberOfProcessors;
 
         status = PdhOpenQuery(NULL, 0, &query);
-        if (status != ERROR_SUCCESS) 
+        if (status != ERROR_SUCCESS)
         {
             return false;
         }
@@ -50,7 +154,7 @@ bool resource_usage_bi::updateCpu()
             path << L"\\Processor(" << i << L")\\% Processor Time";
 
             status = PdhAddEnglishCounterW(query, path.str().c_str(), 0, &counters[i]);
-            if (status != ERROR_SUCCESS) 
+            if (status != ERROR_SUCCESS)
             {
                 PdhCloseQuery(query);
                 query = NULL;
@@ -60,7 +164,7 @@ bool resource_usage_bi::updateCpu()
         }
 
         status = PdhCollectQueryData(query);
-        if (status != ERROR_SUCCESS) 
+        if (status != ERROR_SUCCESS)
         {
             PdhCloseQuery(query);
             query = NULL;
@@ -72,7 +176,7 @@ bool resource_usage_bi::updateCpu()
     }
 
     status = PdhCollectQueryData(query);
-    if (status != ERROR_SUCCESS) 
+    if (status != ERROR_SUCCESS)
     {
         PdhCloseQuery(query);
         query = NULL;
@@ -89,7 +193,7 @@ bool resource_usage_bi::updateCpu()
         DWORD counterType;
 
         status = PdhGetFormattedCounterValue(counters[i], PDH_FMT_DOUBLE, &counterType, &counterVal);
-        if (status == ERROR_SUCCESS) 
+        if (status == ERROR_SUCCESS)
         {
             std::ostringstream oss;
             oss << std::fixed << std::setprecision(2) << counterVal.doubleValue;
@@ -98,7 +202,7 @@ bool resource_usage_bi::updateCpu()
             total += counterVal.doubleValue;
             ++validCoreCount;
         }
-        else 
+        else
         {
             cpuInfo.CoreUsagePercents[i] = "N/A";
         }
@@ -115,16 +219,28 @@ bool resource_usage_bi::updateCpu()
         cpuInfo.UsagePercent = "N/A";
     }
 
+    if (status != ERROR_SUCCESS)
+    {
+        std::cerr << "Pdh error: " << status << std::endl;
+        return false;
+    }
+
     return true;
 }
 
-void resource_usage_bi::cleanup() 
+void resource_usage_bi::cleanup()
 {
-    static PDH_HQUERY& query = []() -> PDH_HQUERY& { static PDH_HQUERY q = NULL; return q; }();
-    
-    if (query != NULL) 
+    CoUninitialize();
+
+    static PDH_HQUERY &query = []() -> PDH_HQUERY &
+    { static PDH_HQUERY q = NULL; return q; }();
+
+    if (query != NULL)
     {
         PdhCloseQuery(query);
         query = NULL;
     }
+
+    networkInfo.clear();
+    disksInfo.clear();
 }
