@@ -244,3 +244,72 @@ void resource_usage_bi::cleanup()
     networkInfo.clear();
     disksInfo.clear();
 }
+
+bool resource_usage_bi::isStartWithWindowsEnabled() 
+{
+    HKEY hKey;
+    const char* appName = "BatteryInfo";
+    LONG result = RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_READ, &hKey);
+    
+    if (result != ERROR_SUCCESS) {
+        return false;
+    }
+    
+    char path[MAX_PATH] = {0};
+    DWORD pathSize = sizeof(path);
+    
+    result = RegQueryValueExA(hKey, appName, 0, NULL, (LPBYTE)path, &pathSize);
+    RegCloseKey(hKey);
+    
+    return (result == ERROR_SUCCESS);
+}
+
+bool resource_usage_bi::enableStartWithWindows() 
+{
+    HKEY hKey;
+    const char* appName = "BatteryInfo";
+    LONG result = RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_WRITE, &hKey);
+    
+    if (result != ERROR_SUCCESS) {
+        return false;
+    }
+    
+    char path[MAX_PATH] = {0};
+    GetModuleFileNameA(NULL, path, MAX_PATH);
+    
+    result = RegSetValueExA(hKey, appName, 0, REG_SZ, (BYTE*)path, strlen(path) + 1);
+    RegCloseKey(hKey);
+    
+    start_With_Windows = true;
+    return (result == ERROR_SUCCESS);
+}
+
+bool resource_usage_bi::disableStartWithWindows() 
+{
+    HKEY hKey;
+    const char* appName = "BatteryInfo";
+    LONG result = RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_WRITE, &hKey);
+    
+    if (result != ERROR_SUCCESS) 
+    {
+        return false;
+    }
+    
+    result = RegDeleteValueA(hKey, appName);
+    RegCloseKey(hKey);
+    
+    start_With_Windows = false;
+    return (result == ERROR_SUCCESS);
+}
+
+bool resource_usage_bi::toggleStartWithWindows() 
+{
+    if (isStartWithWindowsEnabled()) 
+    {
+        return disableStartWithWindows();
+    } 
+    else 
+    {
+        return enableStartWithWindows();
+    }
+}

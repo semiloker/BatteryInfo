@@ -22,8 +22,15 @@ public:
     {
         CoInitializeEx(NULL, COINIT_MULTITHREADED);
         initCpuInfo();
+
+        start_With_Windows = isStartWithWindowsEnabled();
     }
     
+    bool isStartWithWindowsEnabled();
+    bool enableStartWithWindows();
+    bool disableStartWithWindows();
+    bool toggleStartWithWindows();
+
     struct CpuInfo 
     {
         std::string UsagePercent;
@@ -91,7 +98,7 @@ public:
     std::vector<DiskInfo> disksInfo;    
     std::vector<NetworkInfo> networkInfo;
     
-    bool start_With_Windows = false;
+    bool start_With_Windows = true;
     bool minimize_To_Tray = false;
     bool exit_on_key_esc = false;
     

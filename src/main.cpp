@@ -35,7 +35,7 @@ bool win_bi::Create(int nCmdShow)
     draw_bibi_bi = new draw_batteryinfo_bi();
     ru_bi = new resource_usage_bi();
     ov_bi = new overlay_bi(NULL, NULL, {20, 20, 1920, 1200}, "nullptr");
-    
+
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     int windowWidth = 450;
@@ -56,6 +56,7 @@ bool win_bi::Create(int nCmdShow)
 
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
+
     return true;
 }
 
@@ -250,6 +251,8 @@ void win_bi::OnCreate(HWND hwnd)
     SetTimer(hwnd, 2, 10000, NULL);
 
     bool success = bi_bi->Initialize() && ru_bi->updateRam();
+
+    ru_bi->start_With_Windows = ru_bi->isStartWithWindowsEnabled();
 
     if (!success)
         MessageBoxA(NULL, "Battery initialization failed!", "Error", MB_ICONERROR);
