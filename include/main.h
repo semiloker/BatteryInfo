@@ -32,6 +32,8 @@ public:
 
     WPARAM RunMessageLoop();
 
+    resource_usage_bi* ru_bi;
+
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -70,7 +72,6 @@ private:
     init_dwrite_bi* initdwrite_bi;
     draw_batteryinfo_bi* draw_bibi_bi;
     overlay_bi* ov_bi;
-    resource_usage_bi* ru_bi;
 };
 
 #endif

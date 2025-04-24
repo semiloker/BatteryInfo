@@ -304,7 +304,7 @@ bool resource_usage_bi::disableStartWithWindows()
 
 bool resource_usage_bi::toggleStartWithWindows() 
 {
-    if (isStartWithWindowsEnabled()) 
+    if (!isStartWithWindowsEnabled()) 
     {
         return disableStartWithWindows();
     } 

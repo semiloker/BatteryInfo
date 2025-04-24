@@ -12,6 +12,9 @@ public:
     IDWriteTextFormat* pTextFormatLabel = nullptr;
     IDWriteTextFormat* pTextFormatValue = nullptr;
 
+    int overlay_pos_x = 20;
+    int overlay_pos_y = 20;
+
     void InitGraph();
     void InitDirectWrite();
     void CleanupDirectWrite();
