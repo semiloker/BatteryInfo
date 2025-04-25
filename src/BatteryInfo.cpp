@@ -3,54 +3,174 @@
 bool batteryinfo_bi::Initialize()
 {
     hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_BATTERY, NULL, NULL,
-        DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+                                   DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
 
-    if (hDevInfo == INVALID_HANDLE_VALUE) 
+    if (hDevInfo == INVALID_HANDLE_VALUE)
         return false;
 
-    SP_DEVICE_INTERFACE_DATA did = 
-    { 
-        sizeof(SP_DEVICE_INTERFACE_DATA) 
-    };
+    SP_DEVICE_INTERFACE_DATA did =
+        {
+            sizeof(SP_DEVICE_INTERFACE_DATA)};
 
-    if (!SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_BATTERY, 0, &did)) 
+    if (!SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_BATTERY, 0, &did))
         return false;
 
     DWORD size = 0;
     SetupDiGetDeviceInterfaceDetail(hDevInfo, &did, NULL, 0, &size, NULL);
-    
+
     PSP_DEVICE_INTERFACE_DETAIL_DATA detail = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc(size);
-    if (!detail) 
+    if (!detail)
         return false;
 
     detail->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-    
-    if (!SetupDiGetDeviceInterfaceDetail(hDevInfo, &did, detail, size, NULL, NULL)) 
+
+    if (!SetupDiGetDeviceInterfaceDetail(hDevInfo, &did, detail, size, NULL, NULL))
     {
         free(detail);
         return false;
     }
 
     hBattery = CreateFile(detail->DevicePath, GENERIC_READ | GENERIC_WRITE,
-    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+                          FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
     free(detail);
 
-    if (hBattery == INVALID_HANDLE_VALUE) 
+    if (hBattery == INVALID_HANDLE_VALUE)
         return false;
 
-    return QueryTag() && QueryBatteryInfo() && QueryBatteryStatus() && QueryBatteryRemaining() /*&& QueryRamInfo() && QueryCpuInfo()*/;
+    return QueryTag() && QueryBatteryInfo() && QueryBatteryStatus() && QueryBatteryRemaining() /*&& QueryRamInfo() && QueryCpuInfo()*/ && QueryBatteryCycleCount();
 }
 
-bool batteryinfo_bi::QueryTag() 
+bool batteryinfo_bi::QueryTag()
 {
     DWORD bytesReturned = 0;
     if (!DeviceIoControl(hBattery, IOCTL_BATTERY_QUERY_TAG,
-                         NULL, 0, &tag, sizeof(tag), &bytesReturned, NULL) || tag == 0)
+                         NULL, 0, &tag, sizeof(tag), &bytesReturned, NULL) ||
+        tag == 0)
         return false;
     return true;
 }
 
-bool batteryinfo_bi::QueryBatteryInfo() 
+bool batteryinfo_bi::QueryBatteryCycleCount()
+{
+    HRESULT hres;
+
+    hres = CoInitializeEx(0, COINIT_MULTITHREADED);
+    if (FAILED(hres))
+    {
+        info_static.CycleCount = "COM init failed";
+        return false;
+    }
+
+    hres = CoInitializeSecurity(
+        NULL, -1, NULL, NULL,
+        RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
+        NULL, EOAC_NONE, NULL);
+
+    if (FAILED(hres))
+    {
+        info_static.CycleCount = "Security init failed";
+        CoUninitialize();
+        return false;
+    }
+
+    IWbemLocator *pLoc = nullptr;
+    hres = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER,
+                            IID_IWbemLocator, (LPVOID *)&pLoc);
+
+    if (FAILED(hres))
+    {
+        info_static.CycleCount = "WMI locator failed";
+        CoUninitialize();
+        return false;
+    }
+
+    IWbemServices *pSvc = nullptr;
+    BSTR resource = SysAllocString(L"ROOT\\WMI");
+    hres = pLoc->ConnectServer(
+        resource, NULL, NULL, NULL,
+        0, NULL, NULL, &pSvc);
+    SysFreeString(resource);
+
+    if (FAILED(hres))
+    {
+        info_static.CycleCount = "WMI connect failed";
+        pLoc->Release();
+        CoUninitialize();
+        return false;
+    }
+
+    hres = CoSetProxyBlanket(pSvc,
+                             RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL,
+                             RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE,
+                             NULL, EOAC_NONE);
+
+    if (FAILED(hres))
+    {
+        info_static.CycleCount = "WMI proxy failed";
+        pSvc->Release();
+        pLoc->Release();
+        CoUninitialize();
+        return false;
+    }
+
+    IEnumWbemClassObject *pEnumerator = nullptr;
+    BSTR language = SysAllocString(L"WQL");
+    BSTR query = SysAllocString(L"SELECT * FROM BatteryStatus");
+    hres = pSvc->ExecQuery(
+        language, query,
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        NULL, &pEnumerator);
+    SysFreeString(language);
+    SysFreeString(query);
+
+    if (FAILED(hres))
+    {
+        info_static.CycleCount = "Query failed";
+        pSvc->Release();
+        pLoc->Release();
+        CoUninitialize();
+        return false;
+    }
+
+    IWbemClassObject *pClassObject = nullptr;
+    ULONG uReturn = 0;
+
+    if (pEnumerator->Next(WBEM_INFINITE, 1, &pClassObject, &uReturn) == S_OK)
+    {
+        VARIANT vtProp;
+        VariantInit(&vtProp);
+
+        hres = pClassObject->Get(L"CycleCount", 0, &vtProp, 0, 0);
+
+        if (SUCCEEDED(hres) && (vtProp.vt == VT_I4 || vtProp.vt == VT_UI4))
+        {
+            std::ostringstream oss;
+            oss << vtProp.uintVal << " cycles";
+            info_static.CycleCount = oss.str();
+        }
+        else
+        {
+            info_static.CycleCount = "Unsupported";
+        }
+
+        VariantClear(&vtProp);
+        pClassObject->Release();
+    }
+    else
+    {
+        info_static.CycleCount = "No data";
+    }
+
+    // Cleanup
+    pEnumerator->Release();
+    pSvc->Release();
+    pLoc->Release();
+    CoUninitialize();
+
+    return true;
+}
+
+bool batteryinfo_bi::QueryBatteryInfo()
 {
     BATTERY_QUERY_INFORMATION bqi = {};
     bqi.BatteryTag = tag;
@@ -62,22 +182,22 @@ bool batteryinfo_bi::QueryBatteryInfo()
         return false;
 
     // writing to struct
-    info_static.Chemistry = std::string((char*)bi.Chemistry, 4);
-    info_static.DesignedCapacity = std::to_string(bi.DesignedCapacity) + " mWh (" + 
-                            std::to_string(bi.DesignedCapacity / 1000.0) + " mW)";
-    info_static.FullChargedCapacity = std::to_string(bi.FullChargedCapacity) + " mWh (" + 
-                               std::to_string(bi.FullChargedCapacity / 1000.0) + " mW)";
-    info_static.DefaultAlert1 = std::to_string(bi.DefaultAlert1) + " mWh (" + 
-                         std::to_string(bi.DefaultAlert1 / 1000.0) + " mW)";
-    info_static.DefaultAlert2 = std::to_string(bi.DefaultAlert2) + " mWh (" + 
-                         std::to_string(bi.DefaultAlert2 / 1000.0) + " mW)";
+    info_static.Chemistry = std::string((char *)bi.Chemistry, 4);
+    info_static.DesignedCapacity = std::to_string(bi.DesignedCapacity) + " mWh (" +
+                                   std::to_string(bi.DesignedCapacity / 1000.0) + " mW)";
+    info_static.FullChargedCapacity = std::to_string(bi.FullChargedCapacity) + " mWh (" +
+                                      std::to_string(bi.FullChargedCapacity / 1000.0) + " mW)";
+    info_static.DefaultAlert1 = std::to_string(bi.DefaultAlert1) + " mWh (" +
+                                std::to_string(bi.DefaultAlert1 / 1000.0) + " mW)";
+    info_static.DefaultAlert2 = std::to_string(bi.DefaultAlert2) + " mWh (" +
+                                std::to_string(bi.DefaultAlert2 / 1000.0) + " mW)";
 
-    if (bi.DesignedCapacity > 0) 
+    if (bi.DesignedCapacity > 0)
     {
         int wear = 100 - (bi.FullChargedCapacity * 100 / bi.DesignedCapacity);
         info_static.WearLevel = std::to_string(wear) + "%";
-    } 
-    else 
+    }
+    else
     {
         info_static.WearLevel = "Unknown";
     }
@@ -85,7 +205,7 @@ bool batteryinfo_bi::QueryBatteryInfo()
     return true;
 }
 
-bool batteryinfo_bi::QueryBatteryStatus() 
+bool batteryinfo_bi::QueryBatteryStatus()
 {
     BATTERY_WAIT_STATUS bws = {};
     bws.BatteryTag = tag;
@@ -100,14 +220,14 @@ bool batteryinfo_bi::QueryBatteryStatus()
     voltageStream << bs.Voltage << " mV (" << std::fixed << std::setprecision(3) << voltage << " V)";
     info_1s.Voltage = voltageStream.str();
 
-    double rate = bs.Rate / 1000.0; 
+    double rate = bs.Rate / 1000.0;
     std::ostringstream rateStream;
     rateStream << bs.Rate << " mW (" << std::fixed << std::setprecision(3) << rate << " W)";
     info_1s.Rate = rateStream.str();
 
     info_1s.PowerState =
-        (bs.PowerState & BATTERY_CHARGING) ? "Charging" :
-        (bs.PowerState & BATTERY_DISCHARGING) ? "Discharging" : "Idle";
+        (bs.PowerState & BATTERY_CHARGING) ? "Charging" : (bs.PowerState & BATTERY_DISCHARGING) ? "Discharging"
+                                                                                                : "Idle";
 
     std::ostringstream capacityStream;
     capacityStream << bs.Capacity << " mWh (" << std::fixed << std::setprecision(3) << bs.Capacity / 1000.0 << " Wh)";
@@ -124,20 +244,20 @@ bool batteryinfo_bi::QueryBatteryStatus()
 
 bool batteryinfo_bi::QueryBatteryRemaining()
 {
-    if (bi.FullChargedCapacity > 0) 
-    {    
+    if (bi.FullChargedCapacity > 0)
+    {
         if ((bs.PowerState & BATTERY_DISCHARGING) && bs.Rate != 0)
         {
             int rate_mW = abs(bs.Rate); // +
-            if (rate_mW > 0) 
+            if (rate_mW > 0)
             {
                 int remainingMinutes = (bs.Capacity * 60) / rate_mW;
                 int hours = remainingMinutes / 60;
                 int minutes = remainingMinutes % 60;
                 info_10s.TimeRemaining = std::to_string(hours) + "h. " + std::to_string(minutes) + "m. (" +
-                    std::to_string(remainingMinutes) + " min, based on Capacity / Rate)";
+                                         std::to_string(remainingMinutes) + " min, based on Capacity / Rate)";
             }
-            else 
+            else
             {
                 info_10s.TimeRemaining = "Calculating...";
             }
@@ -146,7 +266,7 @@ bool batteryinfo_bi::QueryBatteryRemaining()
         {
             info_10s.TimeRemaining = "Not discharging";
         }
-    
+
         if ((bs.PowerState & BATTERY_CHARGING) && bs.Rate != 0)
         {
             int rate_mW = abs(bs.Rate); // +
@@ -156,12 +276,12 @@ bool batteryinfo_bi::QueryBatteryRemaining()
                 int timeToFullMinutes = (remainingCapacity * 60) / rate_mW;
                 int fullChargeHours = timeToFullMinutes / 60;
                 int fullChargeMinutes = timeToFullMinutes % 60;
-    
+
                 info_10s.TimeToFullCharge = std::to_string(fullChargeHours) + "h. " +
-                    std::to_string(fullChargeMinutes) + "m. (" +
-                    std::to_string(timeToFullMinutes) + " min, based on (FullChargedCapacity - Capacity) / Rate)";
+                                            std::to_string(fullChargeMinutes) + "m. (" +
+                                            std::to_string(timeToFullMinutes) + " min, based on (FullChargedCapacity - Capacity) / Rate)";
             }
-            else 
+            else
             {
                 info_10s.TimeToFullCharge = "Calculating...";
             }
@@ -175,7 +295,7 @@ bool batteryinfo_bi::QueryBatteryRemaining()
     return true;
 }
 
-// bool batteryinfo_bi::QueryRamInfo() 
+// bool batteryinfo_bi::QueryRamInfo()
 // {
 //     MEMORYSTATUSEX statex = { sizeof(statex) };
 
@@ -193,7 +313,7 @@ bool batteryinfo_bi::QueryBatteryRemaining()
 //     return false;
 // }
 
-// bool batteryinfo_bi::QueryCpuInfo() 
+// bool batteryinfo_bi::QueryCpuInfo()
 // {
 //     FILETIME idleTime, kernelTime, userTime;
 //     if (!GetSystemTimes(&idleTime, &kernelTime, &userTime))
@@ -235,7 +355,7 @@ bool batteryinfo_bi::QueryBatteryRemaining()
 //     return true;
 // }
 
-void batteryinfo_bi::PrintAllConsole() const 
+void batteryinfo_bi::PrintAllConsole() const
 {
     // std::cout << "Chemistry: " << info.Chemistry << "\n"
     //           << "Designed Capacity: " << info.DesignedCapacity << "\n"

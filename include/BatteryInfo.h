@@ -17,6 +17,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <comdef.h>
+#include <Wbemidl.h>
+
+#ifndef BatteryCycleCount
+    #define BatteryCycleCount ((BATTERY_QUERY_INFORMATION_LEVEL)6)
+#endif
 
 // #pragma comment(lib, "setupapi.lib")
 // #pragma comment(lib, "d2d1.lib")
@@ -32,6 +38,15 @@ T clamp(T value, T min, T max)
 
 DEFINE_GUID(GUID_DEVINTERFACE_BATTERY,
 0x72631e54, 0x78a4, 0x11d0, 0xbc, 0xf7, 0x00, 0xaa, 0x00, 0xb7, 0xb3, 0x2a);
+
+DEFINE_GUID(GUID_BATTERY_WMI_CYCLE_COUNT,
+    0x2a2d7d6d, 0x8f1f, 0x457c, 0x9e, 0x1c, 0x3d, 0x7a, 0x2c, 0x91, 0x1d, 0x28);
+
+typedef struct _BATTERY_WMI_CYCLE_COUNT 
+{
+    ULONG Tag;
+    ULONG CycleCount;
+} BATTERY_WMI_CYCLE_COUNT, *PBATTERY_WMI_CYCLE_COUNT;
 
 class batteryinfo_bi
 {
@@ -51,6 +66,7 @@ public:
         std::string DefaultAlert1;
         std::string DefaultAlert2;
         std::string WearLevel;
+        std::string CycleCount;
     };
 
     struct bi_struct_dynamic_1s
@@ -89,6 +105,7 @@ public:
     bool QueryBatteryInfo();
     bool QueryBatteryStatus();
     bool QueryBatteryRemaining();
+    bool QueryBatteryCycleCount();
 
     // FILETIME prevIdleTime = {}, prevKernelTime = {}, prevUserTime = {};
 
