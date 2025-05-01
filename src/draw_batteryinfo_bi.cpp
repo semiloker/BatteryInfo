@@ -256,7 +256,7 @@ bool draw_batteryinfo_bi::handleSwitchClick(POINT cursorPos)
     return false;
 }
 
-void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, overlay_bi* ov_bi, resource_usage_bi* ru_bi)
+void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, overlay_bi* ov_bi, resource_usage_bi* ru_bi, batteryinfo_bi* bi_bi)
 {
     D2D1_SIZE_F rtSize = pRT->GetSize();
     maxWidth = rtSize.width;
@@ -300,7 +300,29 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
     y += 20;
 
     // RAM
-    std::wstring ramGroup = L"RAM";
+    std::wstring batteryGroup = L"Battery";
+    pRT->DrawText(batteryGroup.c_str(), (UINT32)batteryGroup.length(),
+        initdwrite_bi->pTextFormatValue,
+        D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
+    y += 30;
+
+    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.Voltage_, L"Battery Voltager");
+    y += 40;
+    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.Rate_, L"Battery Rate");
+    y += 40;
+    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.PowerState_, L"Battery Power State");
+    y += 40;
+    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.RemainingCapacity_, L"Battery Remaining Capacity");
+    y += 40;
+    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.ChargeLevel_, L"Battery Charge Level");
+    y += 40;
+    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_10s.TimeRemaining_, L"Battery Remaining Time");
+    y += 60;
+
+    pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
+    y += 20;
+
+    std::wstring ramGroup = L"Ram";
     pRT->DrawText(ramGroup.c_str(), (UINT32)ramGroup.length(),
         initdwrite_bi->pTextFormatValue,
         D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);

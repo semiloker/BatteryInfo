@@ -160,7 +160,7 @@ void win_bi::OnPaint(HWND hwnd)
         }
         else if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::SETTINGS)
         {
-            draw_bibi_bi->drawHeaderSettingsD2D(pRenderTarget, initdwrite_bi, ov_bi, ru_bi);
+            draw_bibi_bi->drawHeaderSettingsD2D(pRenderTarget, initdwrite_bi, ov_bi, ru_bi, bi_bi);
         }
 
         draw_bibi_bi->drawHeaders(pRenderTarget, initdwrite_bi);
@@ -330,6 +330,19 @@ void win_bi::UpdateOverlayText()
 
         if (ru_bi->ramInfo.show_ullAvailExtendedVirtual)
             newText += "Extended Virtual: " + ru_bi->ramInfo.ullAvailExtendedVirtual + "\n";
+
+        if (bi_bi->info_1s.Voltage_)
+            newText += "Voltage: " + bi_bi->info_1s.Voltage + "\n";
+        if (bi_bi->info_1s.Rate_)
+            newText += "Rate: " + bi_bi->info_1s.Rate + "\n";
+        if (bi_bi->info_1s.PowerState_)
+            newText += "Power State: " + bi_bi->info_1s.PowerState + "\n";
+        if (bi_bi->info_1s.RemainingCapacity_)
+            newText += "Remaining Capacity: " + bi_bi->info_1s.RemainingCapacity + "\n";
+        if (bi_bi->info_1s.ChargeLevel_)
+            newText += "Charge Level: " + bi_bi->info_1s.ChargeLevel + "\n";
+        if (bi_bi->info_10s.TimeRemaining_)
+            newText += "Time Remaining: " + bi_bi->info_10s.TimeRemaining + "\n";
 
         // Disk Info
         for (const auto& disk : ru_bi->disksInfo)

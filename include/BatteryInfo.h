@@ -76,12 +76,20 @@ public:
         std::string PowerState;
         std::string RemainingCapacity;
         std::string ChargeLevel;
+
+        bool Voltage_ = false;
+        bool Rate_ = false;
+        bool PowerState_ = false;
+        bool RemainingCapacity_ = false;
+        bool ChargeLevel_ = false;
     };
 
     struct bi_struct_dynamic_10s
     {
         std::string TimeRemaining;
         std::string TimeToFullCharge;
+
+        bool TimeRemaining_ = false;
     };
 
     bi_struct_static info_static;
