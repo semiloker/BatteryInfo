@@ -13,6 +13,7 @@
 #include "../include/draw_batteryinfo_bi.h"
 #include "../include/overlay_bi.h"
 #include "../include/resource_usage_bi.h"
+#include "../include/overlay_d2d.h"
 
 class win_bi
 {
@@ -72,6 +73,7 @@ private:
     init_dwrite_bi* initdwrite_bi;
     draw_batteryinfo_bi* draw_bibi_bi;
     overlay_bi* ov_bi;
+    overlay_D2D* ov_d2d;
 };
 
 #endif

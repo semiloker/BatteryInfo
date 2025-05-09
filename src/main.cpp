@@ -37,6 +37,7 @@ bool win_bi::Create(int nCmdShow)
     initdwrite_bi = new init_dwrite_bi();
     draw_bibi_bi = new draw_batteryinfo_bi();
     ru_bi = new resource_usage_bi();
+    ov_d2d = new overlay_D2D();
     ov_bi = new overlay_bi(NULL, NULL, {initdwrite_bi->overlay_pos_x, initdwrite_bi->overlay_pos_y, screenWidth, screenHeight}, "nullptr");
 
     int windowWidth = 450;
@@ -166,9 +167,21 @@ void win_bi::OnPaint(HWND hwnd)
         draw_bibi_bi->drawHeaders(pRenderTarget, initdwrite_bi);
         
         if (ov_bi->show_on_screen_display == true)
-            ov_bi->CreateOverlayWindow(hInstance, hwnd);
+        {
+            if (!ov_d2d->g_hwnd || !IsWindow(ov_d2d->g_hwnd))
+            {
+                ov_d2d->CreateOverlayWindow(hInstance, pRenderTarget, initd2d1_bi->pD2DFactory);
+            }
+            if (!ov_bi->g_hwnd || !IsWindow(ov_bi->g_hwnd))
+            {
+                ov_bi->CreateOverlayWindow(hInstance, hwnd);
+            }
+        }
         if (ov_bi->show_on_screen_display == false)
+        {
+            ov_d2d->DestroyOverlayWindow();
             ov_bi->DestroyOverlayWindow();
+        }
         
         HRESULT hr = pRenderTarget->EndDraw();
         if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
@@ -332,7 +345,7 @@ void win_bi::UpdateOverlayText()
             newText += "Extended Virtual: " + ru_bi->ramInfo.ullAvailExtendedVirtual + "\n";
 
         if (bi_bi->info_1s.Voltage_)
-            newText += "Voltage: " + bi_bi->info_1s.Voltage + "\n";
+            newText += "\nVoltage: " + bi_bi->info_1s.Voltage + "\n";
         if (bi_bi->info_1s.Rate_)
             newText += "Rate: " + bi_bi->info_1s.Rate + "\n";
         if (bi_bi->info_1s.PowerState_)
@@ -514,6 +527,7 @@ void win_bi::OnDestroy()
     ru_bi->cleanup();
     draw_bibi_bi->~draw_batteryinfo_bi();
     ov_bi->~overlay_bi();
+    ov_d2d->~overlay_D2D();
     initdwrite_bi->CleanupDirectWrite();
     KillTimer(hwnd, 1);
     KillTimer(hwnd, 2);

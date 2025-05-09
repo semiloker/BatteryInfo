@@ -11,8 +11,8 @@ public:
     void DiscardRenderTarget();
     void ResizeRenderTarget(HWND hwnd);
 
-private:
     ID2D1Factory* pD2DFactory = nullptr;
+private:
     ID2D1HwndRenderTarget* pRenderTarget = nullptr;
 };
 
