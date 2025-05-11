@@ -2,7 +2,13 @@
 
 overlay_D2D* overlay_D2D::instance = nullptr;
 
-overlay_D2D::overlay_D2D() : g_hwnd(nullptr), pBrush(nullptr), m_pRenderTarget(nullptr), m_pFactory(nullptr)
+overlay_D2D::overlay_D2D() : 
+    g_hwnd(nullptr), 
+    m_pFactory(nullptr), 
+    m_pRenderTarget(nullptr), 
+    pBrush(nullptr),
+    m_width(300),
+    m_height(300)
 {
     instance = this;
 }
@@ -10,17 +16,81 @@ overlay_D2D::overlay_D2D() : g_hwnd(nullptr), pBrush(nullptr), m_pRenderTarget(n
 overlay_D2D::~overlay_D2D()
 {
     DestroyOverlayWindow();
+    SafeRelease(&m_pFactory);
+    instance = nullptr;
+}
+
+overlay_D2D* overlay_D2D::GetInstance()
+{
+    if (!instance)
+    {
+        instance = new overlay_D2D();
+    }
+    return instance;
+}
+
+bool overlay_D2D::InitializeDirect2D()
+{
+    if (!m_pFactory)
+    {
+        HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pFactory);
+        if (FAILED(hr))
+        {
+            MessageBoxA(NULL, "Failed to create D2D1Factory!", "Error", MB_ICONERROR);
+            return false;
+        }
+    }
+
+    if (g_hwnd && m_pFactory && !m_pRenderTarget)
+    {
+        RECT rc;
+        GetClientRect(g_hwnd, &rc);
+        D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top);
+
+        D2D1_RENDER_TARGET_PROPERTIES rtProps = D2D1::RenderTargetProperties(
+            D2D1_RENDER_TARGET_TYPE_DEFAULT,
+            D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED)
+        );
+
+        HRESULT hr = m_pFactory->CreateHwndRenderTarget(
+            rtProps,
+            D2D1::HwndRenderTargetProperties(g_hwnd, size),
+            &m_pRenderTarget
+        );
+
+        if (FAILED(hr))
+        {
+            MessageBoxA(NULL, "Failed to create HwndRenderTarget!", "Error", MB_ICONERROR);
+            SafeRelease(&m_pRenderTarget);
+            return false;
+        }
+
+        hr = m_pRenderTarget->CreateSolidColorBrush(
+            D2D1::ColorF(D2D1::ColorF::AliceBlue, 0.7f),
+            &pBrush
+        );
+        if (FAILED(hr))
+        {
+             MessageBoxA(NULL, "Failed to create solid color brush!", "Error", MB_ICONERROR);
+             SafeRelease(&pBrush);
+             return false;
+        }
+    }
+    return m_pRenderTarget != nullptr;
+}
+
+void overlay_D2D::CleanupDirect2D()
+{
+    SafeRelease(&pBrush);
+    SafeRelease(&m_pRenderTarget);
 }
 
 void overlay_D2D::DestroyOverlayWindow()
 {
+    CleanupDirect2D();
+
     if (g_hwnd && IsWindow(g_hwnd))
     {
-        if (pBrush) 
-        {
-            pBrush->Release();
-            pBrush = nullptr;
-        }
         DestroyWindow(g_hwnd);
         g_hwnd = nullptr;
     }
@@ -28,7 +98,7 @@ void overlay_D2D::DestroyOverlayWindow()
 
 LRESULT CALLBACK overlay_D2D::StaticWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    overlay_D2D* pThis;
+    overlay_D2D* pThis = nullptr;
 
     if (uMsg == WM_NCCREATE)
     {
@@ -49,114 +119,106 @@ LRESULT CALLBACK overlay_D2D::StaticWindowProc(HWND hwnd, UINT uMsg, WPARAM wPar
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-void overlay_D2D::CreateOverlayWindow(HINSTANCE hInstance, ID2D1HwndRenderTarget* pRenderTarget, ID2D1Factory* pFactory) 
+bool overlay_D2D::CreateOverlayWindow(HINSTANCE hInstance, int width, int height)
 {
-    // Якщо вікно вже створено, просто оновлюємо його
-    if (g_hwnd != nullptr && IsWindow(g_hwnd)) 
+    if (g_hwnd != nullptr && IsWindow(g_hwnd))
     {
-        ForceTopLeft();
-        Render(pRenderTarget, pFactory);
-        return;
+        ForceTopLeft(m_width, m_height);
+        Render();
+        return true;
     }
 
-    const char CLASS_NAME[] = "ov d2d";
+    m_width = width;
+    m_height = height;
+
+    const char CLASS_NAME[] = "MyOverlayD2DWindowClass";
 
     WNDCLASSA wc = {};
     wc.lpfnWndProc = StaticWindowProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = NULL;
+    wc.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(0,0,0));
 
-    this->m_pRenderTarget = pRenderTarget;
-    this->m_pFactory = pFactory;
-
-    if (!GetClassInfoA(hInstance, CLASS_NAME, &wc))
+    // Реєструємо клас вікна, якщо ще не зареєстрований
+    WNDCLASSA existing_wc = {};
+    if (!GetClassInfoA(hInstance, CLASS_NAME, &existing_wc))
     {
-        RegisterClassA(&wc);
+        if (!RegisterClassA(&wc))
+        {
+            MessageBoxA(NULL, "Failed to register window class!", "Error", MB_ICONERROR);
+            return false;
+        }
     }
 
+
     g_hwnd = CreateWindowExA(
-        WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TOOLWINDOW,
+        WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, // WS_EX_NOACTIVATE, щоб не забирати фокус
         CLASS_NAME,
-        "Transparent Overlay",
+        "D2D Overlay Window",
         WS_POPUP,
         0, 0,
-        300, 300,
+        m_width, m_height,
         NULL,
         NULL,
         hInstance,
         this
     );
 
-    if (g_hwnd == NULL) 
+    if (g_hwnd == NULL)
     {
-        MessageBoxA(NULL, "Failed to create window!", "Error", MB_ICONERROR);
-        return;
+        MessageBoxA(NULL, "Failed to create overlay window!", "Error", MB_ICONERROR);
+        return false;
     }
 
-    SetLayeredWindowAttributes(g_hwnd, 0, 255, LWA_ALPHA);
+    SetLayeredWindowAttributes(g_hwnd, RGB(0,0,0), 0, LWA_COLORKEY);
 
-    BOOL compositionEnabled = FALSE;
-    HRESULT hr = DwmIsCompositionEnabled(&compositionEnabled);
-    if (SUCCEEDED(hr) && compositionEnabled) 
+
+    if (!InitializeDirect2D()) 
     {
-        DWM_BLURBEHIND bb = {0};
-        bb.dwFlags = DWM_BB_ENABLE;
-        bb.fEnable = TRUE;
-        bb.hRgnBlur = NULL;
-        
-        DwmEnableBlurBehindWindow(g_hwnd, &bb);
+        DestroyOverlayWindow();
+        return false;
     }
-
-    // Встановлюємо вікно завжди зверху і робимо його прозорим для вводу
-    SetWindowLong(g_hwnd, GWL_EXSTYLE, 
-                 GetWindowLong(g_hwnd, GWL_EXSTYLE) | 
-                 WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_NOACTIVATE);
-
-    ForceTopLeft();
-    Render(pRenderTarget, pFactory);
+    
+    ForceTopLeft(m_width, m_height);
 
     ShowWindow(g_hwnd, SW_SHOW);
     UpdateWindow(g_hwnd);
-    
-    // ВИДАЛЕНО цикл обробки повідомлень, який блокував головний потік
+
+    return true;
 }
 
-void overlay_D2D::ForceTopLeft()
+void overlay_D2D::ForceTopLeft(int width, int height)
 {
     if (!g_hwnd) return;
-    
-    int x = 0;
-    int y = 0;
-
-    SetWindowPos(g_hwnd, HWND_TOPMOST, x, y, 300, 300, SWP_NOACTIVATE | SWP_SHOWWINDOW);
+    SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, width, height, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE); // Спочатку встановлюємо TOPMOST
+    SetWindowPos(g_hwnd, NULL, 0, 0, width, height, SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_SHOWWINDOW); // Потім розмір і позицію
 }
 
-LRESULT CALLBACK overlay_D2D::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
+
+LRESULT CALLBACK overlay_D2D::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg) 
+    switch (uMsg)
     {
     case WM_CREATE:
         return 0;
 
-    case WM_DESTROY:
-        return 0;
-
     case WM_PAINT:
-        Render(this->m_pRenderTarget, this->m_pFactory);
+        Render();
         return 0;
 
     case WM_SIZE:
-        Resize(this->m_pRenderTarget);
-        ForceTopLeft();
+        {
+            UINT width = LOWORD(lParam);
+            UINT height = HIWORD(lParam);
+            Resize(width, height);
+        }
         return 0;
-        
+    
     case WM_DISPLAYCHANGE:
-        ForceTopLeft();
+        InvalidateRect(g_hwnd, NULL, FALSE);
         return 0;
-    case WM_WINDOWPOSCHANGED:
-        ForceTopLeft();
+    case WM_DESTROY:
         return 0;
 
     default:
@@ -164,93 +226,94 @@ LRESULT CALLBACK overlay_D2D::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
     }
 }
 
-void overlay_D2D::Render(ID2D1HwndRenderTarget* pRenderTarget, ID2D1Factory* pFactory) 
+void overlay_D2D::Render()
 {
-    if (!g_hwnd || !IsWindow(g_hwnd)) return;
-    
+    if (!g_hwnd || !IsWindow(g_hwnd) || !m_pRenderTarget) return;
+
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(g_hwnd, &ps);
 
-    // Якщо RenderTarget ще не створено, створюємо його
-    if (!pRenderTarget || !pBrush) {
-        RECT rc;
-        GetClientRect(g_hwnd, &rc);
+    m_pRenderTarget->BeginDraw();
+    m_pRenderTarget->Clear(D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f)); 
 
-        D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top);
-        
-        // Властивості для створення RenderTarget
-        D2D1_RENDER_TARGET_PROPERTIES rtProps = D2D1::RenderTargetProperties(
-            D2D1_RENDER_TARGET_TYPE_DEFAULT,
-            D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED)
+    D2D1_SIZE_F rtSize = m_pRenderTarget->GetSize();
+
+    ID2D1SolidColorBrush* redBrush = nullptr;
+    ID2D1SolidColorBrush* greenBrush = nullptr;
+    ID2D1SolidColorBrush* blueBrush = nullptr;
+
+    HRESULT hr_red = m_pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Red, 1.0f), &redBrush);
+    HRESULT hr_green = m_pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Green, 1.0f), &greenBrush);
+    HRESULT hr_blue = m_pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Blue, 1.0f), &blueBrush);
+
+    if (SUCCEEDED(hr_green))
+    {
+        D2D1_RECT_F rect = D2D1::RectF(
+            rtSize.width * 0.1f, 
+            rtSize.height * 0.1f, 
+            rtSize.width * 0.4f, 
+            rtSize.height * 0.3f
         );
-        
-        // Створюємо RenderTarget для вікна, якщо його ще немає
-        if (!pRenderTarget && pFactory) {
-            HRESULT hr = pFactory->CreateHwndRenderTarget(
-                rtProps,
-                D2D1::HwndRenderTargetProperties(g_hwnd, size),
-                &pRenderTarget
-            );
-            
-            if (SUCCEEDED(hr)) {
-                this->m_pRenderTarget = pRenderTarget;
-            }
-        }
-
-        // Створюємо чорну напівпрозору кисть, якщо її ще немає
-        if (pRenderTarget && !pBrush) {
-            pRenderTarget->CreateSolidColorBrush(
-                D2D1::ColorF(D2D1::ColorF::Black, 0.5f), // Напівпрозорий чорний колір (альфа = 0.5)
-                &pBrush
-            );
-        }
+        m_pRenderTarget->FillRectangle(rect, greenBrush);
     }
 
-    if (pRenderTarget && pBrush) {
-        pRenderTarget->BeginDraw();
-        
-        // Очищаємо вікно (прозоро)
-        pRenderTarget->Clear(D2D1::ColorF(0, 0, 0, 0));
-        
-        // Розміри вікна
-        D2D1_SIZE_F size = pRenderTarget->GetSize();
-        
-        // Малюємо напівпрозорий чорний квадрат у центрі вікна
-        float squareSize = size.width; // Розмір квадрата - половина меншої сторони вікна
-        D2D1_RECT_F square = D2D1::RectF(
-            (size.width - squareSize) / 2,
-            (size.height - squareSize) / 2,
-            (size.width + squareSize) / 2,
-            (size.height + squareSize) / 2
+    if (SUCCEEDED(hr_blue))
+    {
+        D2D1_ELLIPSE ellipse = D2D1::Ellipse(
+            D2D1::Point2F(rtSize.width * 0.7f, rtSize.height * 0.25f),
+            rtSize.width * 0.1f, 
+            rtSize.height * 0.1f
         );
-        
-        pRenderTarget->FillRectangle(square, pBrush);
-        
-        // Завершуємо малювання
-        HRESULT hr = pRenderTarget->EndDraw();
-        if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET) {
-            // Обробка помилок - пересоздать ресурси при необхідності
-            if (pBrush) {
-                pBrush->Release();
-                pBrush = nullptr;
-            }
-        }
+        m_pRenderTarget->FillEllipse(ellipse, blueBrush);
+    }
+
+    if (SUCCEEDED(hr_red))
+    {
+        m_pRenderTarget->DrawLine(
+            D2D1::Point2F(rtSize.width * 0.1f, rtSize.height * 0.5f),
+            D2D1::Point2F(rtSize.width * 0.9f, rtSize.height * 0.5f),
+            redBrush,
+            3.0f
+        );
+    }
+
+    if (pBrush)
+    {
+        D2D1_RECT_F roundedRectShape = D2D1::RectF(
+            rtSize.width * 0.2f, 
+            rtSize.height * 0.6f, 
+            rtSize.width * 0.8f, 
+            rtSize.height * 0.9f
+        );
+        D2D1_ROUNDED_RECT roundedRect = D2D1::RoundedRect(roundedRectShape, 20.0f, 20.0f);
+        m_pRenderTarget->FillRoundedRectangle(roundedRect, pBrush);
+    }
+
+    SafeRelease(&redBrush);
+    SafeRelease(&greenBrush);
+    SafeRelease(&blueBrush);
+
+    HRESULT hr = m_pRenderTarget->EndDraw();
+    if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
+    {
+        CleanupDirect2D();
     }
 
     EndPaint(g_hwnd, &ps);
 }
 
-void overlay_D2D::Resize(ID2D1HwndRenderTarget* pRenderTarget) 
+void overlay_D2D::Resize(UINT width, UINT height)
 {
-    if (pRenderTarget && g_hwnd) 
+    if (m_pRenderTarget)
     {
-        RECT rc;
-        GetClientRect(g_hwnd, &rc);
+        m_width = width;
+        m_height = height;
         
-        D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top);
+        D2D1_SIZE_U newSize = D2D1::SizeU(width, height);
+        m_pRenderTarget->Resize(newSize);
         
-        pRenderTarget->Resize(size);
-        
-        InvalidateRect(g_hwnd, NULL, FALSE);
+        // ForceTopLeft(width, height); 
+
+        InvalidateRect(g_hwnd, NULL, FALSE); 
     }
 }

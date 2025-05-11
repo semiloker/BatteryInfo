@@ -168,10 +168,8 @@ void win_bi::OnPaint(HWND hwnd)
         
         if (ov_bi->show_on_screen_display == true)
         {
-            if (!ov_d2d->g_hwnd || !IsWindow(ov_d2d->g_hwnd))
-            {
-                ov_d2d->CreateOverlayWindow(hInstance, pRenderTarget, initd2d1_bi->pD2DFactory);
-            }
+            ov_d2d->CreateOverlayWindow(hInstance, 300, 300);
+
             if (!ov_bi->g_hwnd || !IsWindow(ov_bi->g_hwnd))
             {
                 ov_bi->CreateOverlayWindow(hInstance, hwnd);

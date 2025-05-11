@@ -13,7 +13,7 @@ public:
     RECT g_textRectPos;
     std::string g_text;
     static overlay_bi* instance;
-    bool show_on_screen_display = false;
+    bool show_on_screen_display = true;
     
     overlay_bi(HWND g_hwnd, HFONT g_hFont, RECT g_textRectPos, std::string g_text);
     
