@@ -162,6 +162,10 @@ void win_bi::OnPaint(HWND hwnd)
         {
             draw_bibi_bi->drawHeaderSettingsD2D(pRenderTarget, initdwrite_bi, ov_bi, ru_bi, bi_bi);
         }
+        else if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::ABOUT_ME)
+        {
+            draw_bibi_bi->drawHeaderAboutMeD2D(pRenderTarget,initdwrite_bi, ov_bi, ru_bi, bi_bi);
+        }
 
         draw_bibi_bi->drawHeaders(pRenderTarget, initdwrite_bi);
         
@@ -429,6 +433,11 @@ void win_bi::OnLeftButtonDown(WPARAM wParam, LPARAM lParam)
     if (draw_bibi_bi->isCursorInSettings(pt)) 
     {
         draw_bibi_bi->selectedTab = draw_batteryinfo_bi::SETTINGS;
+        InvalidateRect(hwnd, nullptr, TRUE);
+    }
+    if (draw_bibi_bi->isCursorInAboutMe(pt))
+    {
+        draw_bibi_bi->selectedTab = draw_batteryinfo_bi::ABOUT_ME;
         InvalidateRect(hwnd, nullptr, TRUE);
     }
 

@@ -93,8 +93,18 @@ public:
         bool show_uploadSpeed = false;
     };
 
+    struct GpuInfo
+    {
+        std::string gpuName;
+        std::string gpuLoad;
+
+        bool show_gpuName = false;
+        bool show_gpuLoad = false;
+    };
+
     CpuInfo cpuInfo;
     RamInfo ramInfo;
+    GpuInfo gpuInfo;
     std::vector<DiskInfo> disksInfo;    
     std::vector<NetworkInfo> networkInfo;
     

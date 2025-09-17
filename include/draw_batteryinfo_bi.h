@@ -53,12 +53,14 @@ public:
     {
         BATTERY_INFO, 
         SETTINGS,
+        ABOUT_ME,
     };
 
     selected_option selectedTab = BATTERY_INFO;
 
     void drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget* pRT, batteryinfo_bi* bi_bi, init_dwrite_bi* initdwrite_bi, int startX, int startY, int lineHeight);
     void drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, overlay_bi* ov_bi, resource_usage_bi* ru_bi, batteryinfo_bi* bi_bi);
+    void drawHeaderAboutMeD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, overlay_bi* ov_bi, resource_usage_bi* ru_bi, batteryinfo_bi* bi_bi);
     void drawHeaders(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, int startX = 20, int startY = 20, int lineHeight = 24);
 
     bool initBrush(ID2D1HwndRenderTarget* pRT);
@@ -66,6 +68,7 @@ public:
 
     bool isCursorInBatteryStatus(POINT cursorPos);
     bool isCursorInSettings(POINT cursorPos);
+    bool isCursorInAboutMe(POINT cursorPos);
 
     void drawToggleSwitch(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, 
                       float x, float y, bool& toggleState, const std::wstring& labelText);
@@ -77,6 +80,7 @@ public:
 
     D2D1_RECT_F rectBatteryStatus{};
     D2D1_RECT_F rectSettings{};
+    D2D1_RECT_F rectAboutMe{};
 private:
     D2D1_COLOR_F textColor; 
     D2D1_COLOR_F labelColor;

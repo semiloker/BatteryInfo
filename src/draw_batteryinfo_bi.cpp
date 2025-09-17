@@ -37,10 +37,17 @@ bool draw_batteryinfo_bi::isCursorInSettings(POINT cursorPos)
             cursorPos.y >= rectSettings.top && cursorPos.y <= rectSettings.bottom);
 }
 
+bool draw_batteryinfo_bi::isCursorInAboutMe(POINT cursorPos)
+{
+    return (cursorPos.x >= rectAboutMe.left && cursorPos.x <= rectAboutMe.right &&
+            cursorPos.y >= rectAboutMe.top && cursorPos.y <= rectAboutMe.bottom);
+}
+
 void draw_batteryinfo_bi::drawHeaders(ID2D1HwndRenderTarget *pRT, init_dwrite_bi *initdwrite_bi, int startX, int startY, int lineHeight)
 {
     std::wstring header_battery_status = L"Battery Status";
     std::wstring header_settings = L"Settings";
+    std::wstring header_about_me = L"About Me";
 
     float currentX = (float)startX;
     float currentY = (float)startY;
@@ -74,6 +81,8 @@ void draw_batteryinfo_bi::drawHeaders(ID2D1HwndRenderTarget *pRT, init_dwrite_bi
                     rectBatteryStatus = rect;
                 else if (headerIndex == 1)
                     rectSettings = rect;
+                else if (headerIndex == 2)
+                    rectAboutMe = rect;
 
                 D2D1_COLOR_F currentTextColor = (isSelected) ? D2D1::ColorF(0.2f, 0.4f, 0.8f) : D2D1::ColorF(0.5f, 0.5f, 0.5f);
 
@@ -104,6 +113,7 @@ void draw_batteryinfo_bi::drawHeaders(ID2D1HwndRenderTarget *pRT, init_dwrite_bi
     pRT->FillRectangle(&box_header, pBackgroundBrush);
     drawHeaderWithBox(header_battery_status, selectedTab == BATTERY_INFO);
     drawHeaderWithBox(header_settings, selectedTab == SETTINGS);
+    drawHeaderWithBox(header_about_me, selectedTab == ABOUT_ME);
 }
 
 void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget *pRT, batteryinfo_bi *bi_bi, init_dwrite_bi *initdwrite_bi, int startX, int startY, int lineHeight)
@@ -436,4 +446,25 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
 
         pRT->FillRectangle(&scrollbarRect, pScrollBarBrush);
     }
+}
+
+void draw_batteryinfo_bi::drawHeaderAboutMeD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, overlay_bi* ov_bi, resource_usage_bi* ru_bi, batteryinfo_bi* bi_bi)
+{
+    D2D1_SIZE_F rtSize = pRT->GetSize();
+    maxWidth = rtSize.width;
+    
+    float y = 66.0f - scrollOffsetY;
+
+    std::wstring behaviorGroup = L"About Me";
+        pRT->DrawText(
+            behaviorGroup.c_str(),
+            static_cast<UINT32>(behaviorGroup.length()),
+            initdwrite_bi->pTextFormatLabel,
+            D2D1::RectF((FLOAT)20, (FLOAT)y, maxWidth, y + 20),
+            pHeaderBrush);
+    y += 30;
+    std::wstring info = L"==БЬІЛО И БЬІЛО==";
+    pRT->DrawText(info.c_str(), (UINT32)info.length(),
+        initdwrite_bi->pTextFormatValue,
+        D2D1::RectF(20, y, maxWidth, y + 20), pLabelBrush);
 }
