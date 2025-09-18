@@ -2,19 +2,57 @@
 
 bool draw_batteryinfo_bi::initBrush(ID2D1HwndRenderTarget *pRT)
 {
+    // Якщо вже були, оновимо/звільнимо і створимо заново через updateBrushes
+    return updateBrushes(pRT);
+}
+
+bool draw_batteryinfo_bi::updateBrushes(ID2D1HwndRenderTarget *pRT)
+{
+    // Безпечне звільнення існуючих кистей
+    auto SafeRelease = [](ID2D1SolidColorBrush *&b)
+    { if (b) { b->Release(); b = nullptr; } };
+    SafeRelease(pLabelBrush);
+    SafeRelease(pValueBrush);
+    SafeRelease(pHeaderBrush);
+    SafeRelease(pSeparatorBrush);
+    SafeRelease(pSwitchOnBrush);
+    SafeRelease(pSwitchOffBrush);
+    SafeRelease(pSwitchKnobBrush);
+    SafeRelease(pScrollBarBrush);
+    SafeRelease(pBackgroundBrush);
+    SafeRelease(pAccentBrush);
+
+    // Обчислимо фон в залежності від nightMode
+    if (nightMode)
+    {
+        backgroundColor = D2D1::ColorF(0.06f, 0.06f, 0.07f); // дуже темний
+        textColor = D2D1::ColorF(0.92f, 0.92f, 0.92f);       // світлий текст
+        labelColor = D2D1::ColorF(0.78f, 0.78f, 0.78f);
+        separatorColor = D2D1::ColorF(0.18f, 0.18f, 0.18f);
+    }
+    else
+    {
+        backgroundColor = D2D1::ColorF(0.98f, 0.98f, 0.98f);
+        textColor = D2D1::ColorF(0.1f, 0.1f, 0.1f);
+        labelColor = D2D1::ColorF(0.4f, 0.4f, 0.4f);
+        separatorColor = D2D1::ColorF(0.8f, 0.8f, 0.8f);
+    }
+
+    // створимо кисті
     pRT->CreateSolidColorBrush(labelColor, &pLabelBrush);
     pRT->CreateSolidColorBrush(textColor, &pValueBrush);
     pRT->CreateSolidColorBrush(headerColor, &pHeaderBrush);
-    
     pRT->CreateSolidColorBrush(separatorColor, &pSeparatorBrush);
 
-    pRT->CreateSolidColorBrush(D2D1::ColorF(0.2f, 0.6f, 0.3f), &pSwitchOnBrush);    // Зелений для ON
-    pRT->CreateSolidColorBrush(D2D1::ColorF(0.7f, 0.7f, 0.7f), &pSwitchOffBrush);   // Сірий для OFF
-    pRT->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 1.0f), &pSwitchKnobBrush);  // Білий для кнопки
+    pRT->CreateSolidColorBrush(D2D1::ColorF(0.2f, 0.6f, 0.3f), &pSwitchOnBrush);   // Зелений для ON
+    pRT->CreateSolidColorBrush(D2D1::ColorF(0.7f, 0.7f, 0.7f), &pSwitchOffBrush);  // Сірий для OFF
+    pRT->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 1.0f), &pSwitchKnobBrush); // Білий для кнопки
 
     pRT->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::DarkGray), &pScrollBarBrush);
 
-    pRT->CreateSolidColorBrush(D2D1::ColorF(0.98f, 0.98f, 0.98f), &pBackgroundBrush);
+    pRT->CreateSolidColorBrush(backgroundColor, &pBackgroundBrush);
+
+    pRT->CreateSolidColorBrush(accentColor, &pAccentBrush);
 
     return true;
 }
@@ -43,11 +81,18 @@ bool draw_batteryinfo_bi::isCursorInAboutMe(POINT cursorPos)
             cursorPos.y >= rectAboutMe.top && cursorPos.y <= rectAboutMe.bottom);
 }
 
+bool draw_batteryinfo_bi::isCursorInAppearance(POINT cursorPos)
+{
+    return (cursorPos.x >= rectAppearance.left && cursorPos.x <= rectAppearance.right &&
+            cursorPos.y >= rectAppearance.top && cursorPos.y <= rectAppearance.bottom);
+}
+
 void draw_batteryinfo_bi::drawHeaders(ID2D1HwndRenderTarget *pRT, init_dwrite_bi *initdwrite_bi, int startX, int startY, int lineHeight)
 {
     std::wstring header_battery_status = L"Battery Status";
     std::wstring header_settings = L"Settings";
     std::wstring header_about_me = L"About Me";
+    std::wstring header_appearance = L"Appearance"; // новий заголовок
 
     float currentX = (float)startX;
     float currentY = (float)startY;
@@ -82,9 +127,11 @@ void draw_batteryinfo_bi::drawHeaders(ID2D1HwndRenderTarget *pRT, init_dwrite_bi
                 else if (headerIndex == 1)
                     rectSettings = rect;
                 else if (headerIndex == 2)
+                    rectAppearance = rect;
+                else if (headerIndex == 3)
                     rectAboutMe = rect;
-
-                D2D1_COLOR_F currentTextColor = (isSelected) ? D2D1::ColorF(0.2f, 0.4f, 0.8f) : D2D1::ColorF(0.5f, 0.5f, 0.5f);
+                
+                D2D1_COLOR_F currentTextColor = (isSelected) ? accentColor : D2D1::ColorF(0.5f, 0.5f, 0.5f);
 
                 ID2D1SolidColorBrush *pTextBrush;
                 pRT->CreateSolidColorBrush(currentTextColor, &pTextBrush);
@@ -95,8 +142,6 @@ void draw_batteryinfo_bi::drawHeaders(ID2D1HwndRenderTarget *pRT, init_dwrite_bi
                     initdwrite_bi->pTextFormatHeader,
                     rect,
                     pTextBrush);
-
-                // pRT->DrawRectangle(rect, pHeaderBrush);
 
                 currentX += width + 30.0f;
                 headerIndex++;
@@ -110,9 +155,13 @@ void draw_batteryinfo_bi::drawHeaders(ID2D1HwndRenderTarget *pRT, init_dwrite_bi
     D2D1_RECT_F box_header = D2D1::RectF(
         0.0f, 0.0f, maxWidth, 60.0f);
 
-    pRT->FillRectangle(&box_header, pBackgroundBrush);
+    // фон заголовка повинен також реагувати на тему
+    if (pBackgroundBrush)
+        pRT->FillRectangle(&box_header, pBackgroundBrush);
+
     drawHeaderWithBox(header_battery_status, selectedTab == BATTERY_INFO);
     drawHeaderWithBox(header_settings, selectedTab == SETTINGS);
+    drawHeaderWithBox(header_appearance, selectedTab == APPEARANCE);
     drawHeaderWithBox(header_about_me, selectedTab == ABOUT_ME);
 }
 
@@ -120,8 +169,6 @@ void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget *pRT, b
 {
     D2D1_SIZE_F rtSize = pRT->GetSize();
     maxWidth = rtSize.width;
-
-    // pRT->Clear(backgroundColor);
 
     std::map<std::wstring, std::vector<std::pair<std::wstring, std::wstring>>> categories = {
         {L"Basic Info", {
@@ -161,7 +208,7 @@ void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget *pRT, b
             static_cast<UINT32>(category.first.length()),
             initdwrite_bi->pTextFormatLabel,
             D2D1::RectF((FLOAT)startX, (FLOAT)y, maxWidth, (FLOAT)(y + lineHeight)),
-            pHeaderBrush);
+            pAccentBrush);
         y += lineHeight + 4;
 
         for (const auto &field : category.second)
@@ -187,8 +234,8 @@ void draw_batteryinfo_bi::drawHeaderBatteryInfoD2D(ID2D1HwndRenderTarget *pRT, b
     }
 }
 
-void draw_batteryinfo_bi::drawToggleSwitch(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, 
-                                         float x, float y, bool& toggleState, const std::wstring& labelText)
+void draw_batteryinfo_bi::drawToggleSwitch(ID2D1HwndRenderTarget *pRT, init_dwrite_bi *initdwrite_bi,
+                                           float x, float y, bool &toggleState, const std::wstring &labelText)
 {
     D2D1_RECT_F textRect = D2D1::RectF(x, y, x + 250, y + 24);
     pRT->DrawText(
@@ -196,56 +243,48 @@ void draw_batteryinfo_bi::drawToggleSwitch(ID2D1HwndRenderTarget* pRT, init_dwri
         (UINT32)labelText.length(),
         initdwrite_bi->pTextFormatLabel,
         textRect,
-        pLabelBrush
-    );
-    
+        pLabelBrush);
+
     const float switchWidth = 48.0f;
     const float switchHeight = 24.0f;
     const float knobSize = switchHeight - 6.0f;
-    // const float switchX = x + 260;
     float switchX = maxWidth - 70.0f;
-    
+
     float textHeight = 24.0f;
     float switchY = y + (textHeight - switchHeight) / 2.0f;
 
     D2D1_ROUNDED_RECT switchRect = {
         D2D1::RectF(switchX, switchY, switchX + switchWidth, switchY + switchHeight),
         switchHeight / 2,
-        switchHeight / 2 
-    };
+        switchHeight / 2};
 
-    SwitchRect hitRect = 
-    {
-        switchRect.rect,
-        &toggleState
-    };
+    SwitchRect hitRect =
+        {
+            switchRect.rect,
+            &toggleState};
     switchRects.push_back(hitRect);
-    
+
     pRT->FillRoundedRectangle(switchRect, toggleState ? pSwitchOnBrush : pSwitchOffBrush);
-    
-    float knobX = toggleState ? 
-        (switchX + switchWidth - knobSize - 3.0f) : (switchX + 3.0f);
-    
+
+    float knobX = toggleState ? (switchX + switchWidth - knobSize - 3.0f) : (switchX + 3.0f);
+
     D2D1_ELLIPSE knob = {
         D2D1::Point2F(knobX + knobSize / 2, switchY + switchHeight / 2),
         knobSize / 2,
-        knobSize / 2
-    };
-    
+        knobSize / 2};
+
     pRT->FillEllipse(knob, pSwitchKnobBrush);
-    
-    if (toggleState) 
+
+    if (toggleState)
     {
-        ID2D1SolidColorBrush* pHighlightBrush;
-        
+        ID2D1SolidColorBrush *pHighlightBrush = nullptr;
         pRT->CreateSolidColorBrush(D2D1::ColorF(0.3f, 0.7f, 0.4f), &pHighlightBrush);
-        
+
         D2D1_ROUNDED_RECT highlightRect = {
             D2D1::RectF(switchX + 1, switchY + 1, switchX + switchWidth - 1, switchY + switchHeight - 1),
             (switchHeight - 2) / 2,
-            (switchHeight - 2) / 2
-        };        
-        
+            (switchHeight - 2) / 2};
+
         pRT->DrawRoundedRectangle(highlightRect, pHighlightBrush, 1.0f);
         pHighlightBrush->Release();
     }
@@ -253,20 +292,61 @@ void draw_batteryinfo_bi::drawToggleSwitch(ID2D1HwndRenderTarget* pRT, init_dwri
 
 bool draw_batteryinfo_bi::handleSwitchClick(POINT cursorPos)
 {
-    for (size_t i = 0; i < switchRects.size(); i++) {
-        if (cursorPos.x >= switchRects[i].rect.left && 
-            cursorPos.x <= switchRects[i].rect.right &&
-            cursorPos.y >= switchRects[i].rect.top && 
-            cursorPos.y <= switchRects[i].rect.bottom) {
-            
-            *(switchRects[i].pState) = !*(switchRects[i].pState);
+    for (size_t i = 0; i < switchRects.size(); ++i)
+    {
+        const D2D1_RECT_F &r = switchRects[i].rect;
+        if (cursorPos.x >= r.left && cursorPos.x <= r.right &&
+            cursorPos.y >= r.top && cursorPos.y <= r.bottom)
+        {
+            if (switchRects[i].pState)
+            {
+                *(switchRects[i].pState) = !*(switchRects[i].pState);
+                return true;
+            }
+            else
+            {
+                // Несподівано: покажчик на стан неініціалізований
+                OutputDebugStringA("handleSwitchClick: null pState\n");
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
+bool draw_batteryinfo_bi::handleColorClick(POINT cursorPos)
+{
+    // Переконаємось що є і rects і палітра
+    size_t n = std::min(colorRects.size(), colorPalette.size());
+    for (size_t i = 0; i < n; ++i)
+    {
+        const D2D1_RECT_F &r = colorRects[i];
+        if (cursorPos.x >= r.left && cursorPos.x <= r.right &&
+            cursorPos.y >= r.top && cursorPos.y <= r.bottom)
+        {
+            accentColor = colorPalette[i];
             return true;
         }
     }
     return false;
 }
 
-void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, overlay_bi* ov_bi, resource_usage_bi* ru_bi, batteryinfo_bi* bi_bi)
+bool draw_batteryinfo_bi::handleAppearanceClick(POINT cursorPos)
+{
+    if (handleSwitchClick(cursorPos))
+    {
+        OutputDebugStringA("Appearance: switch toggled\n");
+        return true;
+    }
+    if (handleColorClick(cursorPos))
+    {
+        OutputDebugStringA("Appearance: color chosen\n");
+        return true;
+    }
+    return false;
+}
+
+void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget *pRT, init_dwrite_bi *initdwrite_bi, overlay_bi *ov_bi, resource_usage_bi *ru_bi, batteryinfo_bi *bi_bi)
 {
     D2D1_SIZE_F rtSize = pRT->GetSize();
     maxWidth = rtSize.width;
@@ -279,145 +359,92 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
     // Overlay group
     std::wstring displayGroup = L"Overlay";
     pRT->DrawText(displayGroup.c_str(), (UINT32)displayGroup.length(),
-        initdwrite_bi->pTextFormatValue,
-        D2D1::RectF(20, y, maxWidth, y + 20), pValueBrush);
+                  initdwrite_bi->pTextFormatValue,
+                  D2D1::RectF(20, y, maxWidth, y + 20), pAccentBrush);
     y += 30;
 
     drawToggleSwitch(pRT, initdwrite_bi, 40, y, ov_bi->show_on_screen_display, L"Show On-Screen Display");
     y += 40;
 
     y += 10;
+    if (ov_bi->show_on_screen_display == true)
+    { 
+        pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
+        y += 20;
+
+        // CPU
+        std::wstring cpuGroup = L"CPU";
+        pRT->DrawText(cpuGroup.c_str(), (UINT32)cpuGroup.length(),
+                      initdwrite_bi->pTextFormatValue,
+                      D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
+        y += 30;
+
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_UsagePercent, L"CPU Usage Percent");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_CoreUsagePercents, L"CPU Core Usage Percents");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_cpuName, L"CPU Name");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_architecture, L"CPU Architecture");
+        y += 60;
+
+        pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
+        y += 20;
+
+        // Battery
+        std::wstring batteryGroup = L"Battery";
+        pRT->DrawText(batteryGroup.c_str(), (UINT32)batteryGroup.length(),
+                      initdwrite_bi->pTextFormatValue,
+                      D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
+        y += 30;
+
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.Voltage_, L"Battery Voltager");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.Rate_, L"Battery Rate");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.PowerState_, L"Battery Power State");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.RemainingCapacity_, L"Battery Remaining Capacity");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.ChargeLevel_, L"Battery Charge Level");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_10s.TimeRemaining_, L"Battery Remaining Time");
+        y += 60;
+
+        pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
+        y += 20;
+
+        std::wstring ramGroup = L"Ram";
+        pRT->DrawText(ramGroup.c_str(), (UINT32)ramGroup.length(),
+                      initdwrite_bi->pTextFormatValue,
+                      D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
+        y += 30;
+
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_dwMemoryLoad, L"Memory Load");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullTotalPhys, L"Total Physical RAM");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullAvailPhys, L"Available Physical RAM");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullTotalPageFile, L"Total Page File");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullAvailPageFile, L"Available Page File");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullTotalVirtual, L"Total Virtual Memory");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullAvailVirtual, L"Available Virtual Memory");
+        y += 40;
+        drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullAvailExtendedVirtual, L"Extended Virtual Memory");
+        y += 60;
+    }
     pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
     y += 20;
-
-    // CPU
-    std::wstring cpuGroup = L"CPU";
-    pRT->DrawText(cpuGroup.c_str(), (UINT32)cpuGroup.length(),
-        initdwrite_bi->pTextFormatValue,
-        D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
-    y += 30;
-
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_UsagePercent, L"CPU Usage Percent");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_CoreUsagePercents, L"CPU Core Usage Percents");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_cpuName, L"CPU Name");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->cpuInfo.show_architecture, L"CPU Architecture");
-    y += 60;
-
-    pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
-    y += 20;
-
-    // RAM
-    std::wstring batteryGroup = L"Battery";
-    pRT->DrawText(batteryGroup.c_str(), (UINT32)batteryGroup.length(),
-        initdwrite_bi->pTextFormatValue,
-        D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
-    y += 30;
-
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.Voltage_, L"Battery Voltager");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.Rate_, L"Battery Rate");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.PowerState_, L"Battery Power State");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.RemainingCapacity_, L"Battery Remaining Capacity");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_1s.ChargeLevel_, L"Battery Charge Level");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, bi_bi->info_10s.TimeRemaining_, L"Battery Remaining Time");
-    y += 60;
-
-    pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
-    y += 20;
-
-    std::wstring ramGroup = L"Ram";
-    pRT->DrawText(ramGroup.c_str(), (UINT32)ramGroup.length(),
-        initdwrite_bi->pTextFormatValue,
-        D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
-    y += 30;
-
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_dwMemoryLoad, L"Memory Load");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullTotalPhys, L"Total Physical RAM");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullAvailPhys, L"Available Physical RAM");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullTotalPageFile, L"Total Page File");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullAvailPageFile, L"Available Page File");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullTotalVirtual, L"Total Virtual Memory");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullAvailVirtual, L"Available Virtual Memory");
-    y += 40;
-    drawToggleSwitch(pRT, initdwrite_bi, 80, y, ru_bi->ramInfo.show_ullAvailExtendedVirtual, L"Extended Virtual Memory");
-    y += 60;
-
-    pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
-    y += 20;
-
-    // Disks
-    // std::wstring diskGroup = L"Disk(s)";
-    // pRT->DrawText(diskGroup.c_str(), (UINT32)diskGroup.length(),
-    //     initdwrite_bi->pTextFormatValue,
-    //     D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
-    // y += 30;
-
-    // int diskIndex = 1;
-    // for (auto& disk : ru_bi->disksInfo)
-    // {
-    //     std::wstring label = L"Disk " + std::to_wstring(diskIndex++);
-    //     pRT->DrawText(label.c_str(), (UINT32)label.length(),
-    //         initdwrite_bi->pTextFormatLabel,
-    //         D2D1::RectF(60, y, maxWidth, y + 20), pValueBrush);
-    //     y += 30;
-
-    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, disk.show_diskLetter, L"Disk Letter");
-    //     y += 40;
-    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, disk.show_totalSpace, L"Total Space");
-    //     y += 40;
-    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, disk.show_freeSpace, L"Free Space");
-    //     y += 40;
-    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, disk.show_usedSpace, L"Used Space");
-    //     y += 40;
-    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, disk.show_usagePercent, L"Usage Percent");
-    //     y += 50;
-    // }
-
-    // pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
-    // y += 20;
-
-    // Network 
-    // std::wstring netGroup = L"Network";
-    // pRT->DrawText(netGroup.c_str(), (UINT32)netGroup.length(),
-    //     initdwrite_bi->pTextFormatValue,
-    //     D2D1::RectF(40, y, maxWidth, y + 20), pValueBrush);
-    // y += 30;
-
-    // int netIndex = 1;
-    // for (auto& net : ru_bi->networkInfo)
-    // {
-    //     std::wstring label = L"Interface " + std::to_wstring(netIndex++);
-    //     pRT->DrawText(label.c_str(), (UINT32)label.length(),
-    //         initdwrite_bi->pTextFormatLabel,
-    //         D2D1::RectF(60, y, maxWidth, y + 20), pValueBrush);
-    //     y += 30;
-
-    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, net.show_interfaceName, L"Interface Name");
-    //     y += 40;
-    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, net.show_downloadSpeed, L"Download Speed");
-    //     y += 40;
-    //     drawToggleSwitch(pRT, initdwrite_bi, 100, y, net.show_uploadSpeed, L"Upload Speed");
-    //     y += 50;
-    // }
 
     // Behavior
     std::wstring behaviorGroup = L"Behavior";
     pRT->DrawText(behaviorGroup.c_str(), (UINT32)behaviorGroup.length(),
-        initdwrite_bi->pTextFormatValue,
-        D2D1::RectF(20, y, maxWidth, y + 20), pValueBrush);
+                  initdwrite_bi->pTextFormatValue,
+                  D2D1::RectF(20, y, maxWidth, y + 20), pAccentBrush);
     y += 30;
 
     drawToggleSwitch(pRT, initdwrite_bi, 40, y, ru_bi->start_With_Windows, L"Start with Windows");
@@ -441,30 +468,102 @@ void draw_batteryinfo_bi::drawHeaderSettingsD2D(ID2D1HwndRenderTarget* pRT, init
             rtSize.width - 5,
             barY,
             rtSize.width - 1,
-            barY + barHeight
-        );
+            barY + barHeight);
 
         pRT->FillRectangle(&scrollbarRect, pScrollBarBrush);
     }
 }
 
-void draw_batteryinfo_bi::drawHeaderAboutMeD2D(ID2D1HwndRenderTarget* pRT, init_dwrite_bi* initdwrite_bi, overlay_bi* ov_bi, resource_usage_bi* ru_bi, batteryinfo_bi* bi_bi)
+void draw_batteryinfo_bi::drawHeaderAppearanceD2D(ID2D1HwndRenderTarget *pRT, init_dwrite_bi *initdwrite_bi)
 {
     D2D1_SIZE_F rtSize = pRT->GetSize();
     maxWidth = rtSize.width;
-    
+    viewHeight = rtSize.height;
+
+    switchRects.clear();
+    colorRects.clear();
+
+    float y = 66.0f - scrollOffsetY;
+
+    std::wstring appearanceGroup = L"Appearance";
+    pRT->DrawText(appearanceGroup.c_str(), (UINT32)appearanceGroup.length(),
+                  initdwrite_bi->pTextFormatValue,
+                  D2D1::RectF(20, y, maxWidth, y + 20), pAccentBrush);
+    y += 30;
+
+    drawToggleSwitch(pRT, initdwrite_bi, 40, y, nightMode, L"Night mode");
+    y += 60;
+
+    pRT->DrawLine(D2D1::Point2F(20, y), D2D1::Point2F(maxWidth - 20, y), pSeparatorBrush);
+    y += 20;
+
+    std::wstring colorLabel = L"Accent color";
+    pRT->DrawText(colorLabel.c_str(), (UINT32)colorLabel.length(),
+                  initdwrite_bi->pTextFormatValue,
+                  D2D1::RectF(20, y, maxWidth, y + 20), pAccentBrush);
+    y += 28;
+
+    const float boxSize = 28.0f;
+    const float gap = 12.0f;
+    const float leftMargin = 40.0f;
+    const int cols = 8;
+
+    float boxX = leftMargin;
+    float startX = leftMargin;
+    int col = 0;
+
+    for (size_t i = 0; i < colorPalette.size(); ++i)
+    {
+        if (col >= cols)
+        {
+            col = 0;
+            boxX = startX;
+            y += boxSize + gap;
+        }
+
+        D2D1_RECT_F box = D2D1::RectF(boxX, y, boxX + boxSize, y + boxSize);
+        colorRects.push_back(box);
+
+        ID2D1SolidColorBrush *pTmp = nullptr;
+        pRT->CreateSolidColorBrush(colorPalette[i], &pTmp);
+        pRT->FillRectangle(&box, pTmp);
+
+        const float eps = 0.01f;
+        if (std::fabs(colorPalette[i].r - accentColor.r) < eps &&
+            std::fabs(colorPalette[i].g - accentColor.g) < eps &&
+            std::fabs(colorPalette[i].b - accentColor.b) < eps)
+        {
+            pRT->DrawRectangle(&box, pHeaderBrush, 2.0f);
+        }
+
+        pTmp->Release();
+
+        boxX += boxSize + gap;
+        ++col;
+    }
+
+    y += boxSize + 24;
+
+    contentHeight = y + scrollOffsetY;
+}
+
+void draw_batteryinfo_bi::drawHeaderAboutMeD2D(ID2D1HwndRenderTarget *pRT, init_dwrite_bi *initdwrite_bi, overlay_bi *ov_bi, resource_usage_bi *ru_bi, batteryinfo_bi *bi_bi)
+{
+    D2D1_SIZE_F rtSize = pRT->GetSize();
+    maxWidth = rtSize.width;
+
     float y = 66.0f - scrollOffsetY;
 
     std::wstring behaviorGroup = L"About Me";
-        pRT->DrawText(
-            behaviorGroup.c_str(),
-            static_cast<UINT32>(behaviorGroup.length()),
-            initdwrite_bi->pTextFormatLabel,
-            D2D1::RectF((FLOAT)20, (FLOAT)y, maxWidth, y + 20),
-            pHeaderBrush);
+    pRT->DrawText(
+        behaviorGroup.c_str(),
+        static_cast<UINT32>(behaviorGroup.length()),
+        initdwrite_bi->pTextFormatLabel,
+        D2D1::RectF((FLOAT)20, (FLOAT)y, maxWidth, y + 20),
+        pAccentBrush);
     y += 30;
     std::wstring info = L"==БЬІЛО И БЬІЛО==";
     pRT->DrawText(info.c_str(), (UINT32)info.length(),
-        initdwrite_bi->pTextFormatValue,
-        D2D1::RectF(20, y, maxWidth, y + 20), pLabelBrush);
+                  initdwrite_bi->pTextFormatValue,
+                  D2D1::RectF(20, y, maxWidth, y + 20), pLabelBrush);
 }

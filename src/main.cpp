@@ -4,7 +4,7 @@ const char win_bi::szClassName[] = "BatteryInfo";
 
 win_bi::win_bi(HINSTANCE hInstance) : hInstance(hInstance), hwnd(NULL) {}
 
-bool win_bi::Register() 
+bool win_bi::Register()
 {
     WNDCLASSEX wc = {};
     wc.cbSize = sizeof(WNDCLASSEX);
@@ -17,8 +17,9 @@ bool win_bi::Register()
     // wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
     wc.hIcon = (HICON)LoadImageA(NULL, "sign-of-battery-icon-vector.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
     wc.hIconSm = (HICON)LoadImageA(NULL, "sign-of-battery-icon-vector.ico", IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
-    if (!wc.hIcon) MessageBoxA(NULL, "Failed to load icon!", "Error", MB_ICONERROR);
-    
+    if (!wc.hIcon)
+        MessageBoxA(NULL, "Failed to load icon!", "Error", MB_ICONERROR);
+
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.lpszMenuName = NULL;
@@ -27,7 +28,7 @@ bool win_bi::Register()
     return RegisterClassEx(&wc) != 0;
 }
 
-bool win_bi::Create(int nCmdShow) 
+bool win_bi::Create(int nCmdShow)
 {
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -39,7 +40,7 @@ bool win_bi::Create(int nCmdShow)
     ru_bi = new resource_usage_bi();
     ov_bi = new overlay_bi(NULL, NULL, {initdwrite_bi->overlay_pos_x, initdwrite_bi->overlay_pos_y, screenWidth, screenHeight}, "nullptr");
 
-    int windowWidth = 450;
+    int windowWidth = 550;
     int windowHeight = 750;
     int x = (screenWidth - windowWidth) / 2;
     int y = (screenHeight - windowHeight) / 2;
@@ -49,7 +50,7 @@ bool win_bi::Create(int nCmdShow)
         x, y, windowWidth, windowHeight,
         NULL, NULL, hInstance, this);
 
-    if (!hwnd) 
+    if (!hwnd)
     {
         MessageBox(NULL, "Could not create a window!", "Error", MB_ICONEXCLAMATION | MB_OK);
         return false;
@@ -61,10 +62,10 @@ bool win_bi::Create(int nCmdShow)
     return true;
 }
 
-WPARAM win_bi::RunMessageLoop() 
+WPARAM win_bi::RunMessageLoop()
 {
     MSG Msg;
-    while (GetMessage(&Msg, NULL, 0, 0) > 0) 
+    while (GetMessage(&Msg, NULL, 0, 0) > 0)
     {
         TranslateMessage(&Msg);
         DispatchMessage(&Msg);
@@ -72,62 +73,100 @@ WPARAM win_bi::RunMessageLoop()
     return Msg.wParam;
 }
 
-LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
+LRESULT CALLBACK win_bi::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    win_bi* pThis = nullptr;
-    
-    if (msg == WM_NCCREATE) 
+    win_bi *pThis = nullptr;
+
+    if (msg == WM_NCCREATE)
     {
-        CREATESTRUCT* pCreate = (CREATESTRUCT*)lParam;
-        pThis = (win_bi*)pCreate->lpCreateParams;
+        CREATESTRUCT *pCreate = (CREATESTRUCT *)lParam;
+        pThis = (win_bi *)pCreate->lpCreateParams;
         SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
-    } 
-    else 
+    }
+    else
     {
-        pThis = (win_bi*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+        pThis = (win_bi *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
     }
 
-    if (!pThis) 
+    if (!pThis)
     {
         return DefWindowProc(hwnd, msg, wParam, lParam);
     }
 
-    switch (msg) 
+    switch (msg)
     {
-        case WM_COMMAND:          pThis->OnCommand(wParam); break;
-        case WM_GETMINMAXINFO:    pThis->OnGetMinMaxInfo(lParam); break;
-        case WM_CREATE:           pThis->OnCreate(hwnd); break;
-        case WM_SIZE:             pThis->OnResize(wParam); break;
-        case WM_PAINT:            pThis->OnPaint(hwnd); break;
-        case WM_KEYDOWN:          pThis->OnKeyDown(wParam); break;
-        case WM_KEYUP:            pThis->OnKeyUp(wParam); break;
-        case WM_MOUSEMOVE:        pThis->OnMouseMove(wParam, lParam); break;
-        case WM_MOUSEWHEEL:       pThis->OnMouseWheel(wParam, lParam); break;
-        case WM_LBUTTONDOWN:      pThis->OnLeftButtonDown(wParam, lParam); break;
-        case WM_RBUTTONDOWN:      pThis->OnRightButtonDown(wParam, lParam); break;
-        case WM_TIMER:            pThis->OnTimer(wParam); break;
-        case WM_SETFOCUS:         pThis->OnSetFocus(hwnd); break;
-        case WM_KILLFOCUS:        pThis->OnKillFocus(hwnd); break;
-        case WM_SYSCOMMAND:       pThis->OnSysCommand(wParam, lParam); break;
-        case WM_CHAR:             pThis->OnChar(wParam); break;
-        case WM_CLOSE:            pThis->OnClose(); break;
-        case WM_USER + 1:
-            switch (lParam) 
-            {
-                case WM_LBUTTONDBLCLK:
-                    ShowWindow(hwnd, SW_RESTORE);
-                    SetForegroundWindow(hwnd);
-                    pThis->RemoveTrayIcon();
-                    break;
-            
-                case WM_RBUTTONUP:
-                    pThis->ShowTrayMenu();
-                    break;
-            }
+    case WM_COMMAND:
+        pThis->OnCommand(wParam);
         break;
-        case WM_ERASEBKGND:       return 1;
-        case WM_DESTROY:          pThis->OnDestroy(); break;
-        default:                  return DefWindowProc(hwnd, msg, wParam, lParam);
+    case WM_GETMINMAXINFO:
+        pThis->OnGetMinMaxInfo(lParam);
+        break;
+    case WM_CREATE:
+        pThis->OnCreate(hwnd);
+        break;
+    case WM_SIZE:
+        pThis->OnResize(wParam);
+        break;
+    case WM_PAINT:
+        pThis->OnPaint(hwnd);
+        break;
+    case WM_KEYDOWN:
+        pThis->OnKeyDown(wParam);
+        break;
+    case WM_KEYUP:
+        pThis->OnKeyUp(wParam);
+        break;
+    case WM_MOUSEMOVE:
+        pThis->OnMouseMove(wParam, lParam);
+        break;
+    case WM_MOUSEWHEEL:
+        pThis->OnMouseWheel(wParam, lParam);
+        break;
+    case WM_LBUTTONDOWN:
+        pThis->OnLeftButtonDown(wParam, lParam);
+        break;
+    case WM_RBUTTONDOWN:
+        pThis->OnRightButtonDown(wParam, lParam);
+        break;
+    case WM_TIMER:
+        pThis->OnTimer(wParam);
+        break;
+    case WM_SETFOCUS:
+        pThis->OnSetFocus(hwnd);
+        break;
+    case WM_KILLFOCUS:
+        pThis->OnKillFocus(hwnd);
+        break;
+    case WM_SYSCOMMAND:
+        pThis->OnSysCommand(wParam, lParam);
+        break;
+    case WM_CHAR:
+        pThis->OnChar(wParam);
+        break;
+    case WM_CLOSE:
+        pThis->OnClose();
+        break;
+    case WM_USER + 1:
+        switch (lParam)
+        {
+        case WM_LBUTTONDBLCLK:
+            ShowWindow(hwnd, SW_RESTORE);
+            SetForegroundWindow(hwnd);
+            pThis->RemoveTrayIcon();
+            break;
+
+        case WM_RBUTTONUP:
+            pThis->ShowTrayMenu();
+            break;
+        }
+        break;
+    case WM_ERASEBKGND:
+        return 1;
+    case WM_DESTROY:
+        pThis->OnDestroy();
+        break;
+    default:
+        return DefWindowProc(hwnd, msg, wParam, lParam);
     }
     return 0;
 }
@@ -143,12 +182,12 @@ void win_bi::OnPaint(HWND hwnd)
     BeginPaint(hwnd, &ps);
 
     initd2d1_bi->InitDirect2D();
-    ID2D1HwndRenderTarget* pRenderTarget = initd2d1_bi->GetOrCreateRenderTarget(hwnd);
+    ID2D1HwndRenderTarget *pRenderTarget = initd2d1_bi->GetOrCreateRenderTarget(hwnd);
     if (pRenderTarget)
     {
         pRenderTarget->BeginDraw();
         // pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::Black));
-        
+
         draw_bibi_bi->initBrush(pRenderTarget);
         // bi_bi->PrintAllWinD2D(pRenderTarget, 20, 30);
         initdwrite_bi->InitGraph();
@@ -164,16 +203,20 @@ void win_bi::OnPaint(HWND hwnd)
         }
         else if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::ABOUT_ME)
         {
-            draw_bibi_bi->drawHeaderAboutMeD2D(pRenderTarget,initdwrite_bi, ov_bi, ru_bi, bi_bi);
+            draw_bibi_bi->drawHeaderAboutMeD2D(pRenderTarget, initdwrite_bi, ov_bi, ru_bi, bi_bi);
+        }
+        else if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::APPEARANCE)
+        {
+            draw_bibi_bi->drawHeaderAppearanceD2D(pRenderTarget, initdwrite_bi);
         }
 
         draw_bibi_bi->drawHeaders(pRenderTarget, initdwrite_bi);
-        
+
         if (ov_bi->show_on_screen_display == true)
             ov_bi->CreateOverlayWindow(hInstance, hwnd);
         if (ov_bi->show_on_screen_display == false)
             ov_bi->DestroyOverlayWindow();
-        
+
         HRESULT hr = pRenderTarget->EndDraw();
         if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
         {
@@ -186,7 +229,7 @@ void win_bi::OnPaint(HWND hwnd)
     // ValidateRect(hwnd, nullptr);
 }
 
-void win_bi::AddTrayIcon() 
+void win_bi::AddTrayIcon()
 {
     ZeroMemory(&nid, sizeof(NOTIFYICONDATA));
     nid.cbSize = sizeof(NOTIFYICONDATA);
@@ -201,9 +244,9 @@ void win_bi::AddTrayIcon()
     UpdateTrayTooltip();
 }
 
-void win_bi::UpdateTrayTooltip() 
+void win_bi::UpdateTrayTooltip()
 {
-    std::string tooltip = 
+    std::string tooltip =
         "Power State: " + bi_bi->info_1s.PowerState + "\n" +
         "Charge: " + bi_bi->info_1s.ChargeLevel + "\n" +
         "Voltage: " + bi_bi->info_1s.Voltage;
@@ -213,7 +256,7 @@ void win_bi::UpdateTrayTooltip()
     Shell_NotifyIcon(NIM_MODIFY, &nid);
 }
 
-void win_bi::RemoveTrayIcon() 
+void win_bi::RemoveTrayIcon()
 {
     Shell_NotifyIcon(NIM_DELETE, &nid);
 }
@@ -224,7 +267,7 @@ void win_bi::ShowTrayMenu()
     GetCursorPos(&pt);
 
     HMENU hMenu = CreatePopupMenu();
-    if (hMenu) 
+    if (hMenu)
     {
         InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 1, "Open");
         InsertMenu(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
@@ -236,21 +279,21 @@ void win_bi::ShowTrayMenu()
         int cmd = TrackPopupMenu(hMenu, TPM_RETURNCMD | TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hwnd, NULL);
         DestroyMenu(hMenu);
 
-        switch (cmd) 
+        switch (cmd)
         {
-            case 1:
-                ShowWindow(hwnd, SW_RESTORE);
-                SetForegroundWindow(hwnd);
-                RemoveTrayIcon();
-                break;
-            case 2:
-                PostQuitMessage(0);
-                break;
+        case 1:
+            ShowWindow(hwnd, SW_RESTORE);
+            SetForegroundWindow(hwnd);
+            RemoveTrayIcon();
+            break;
+        case 2:
+            PostQuitMessage(0);
+            break;
         }
     }
 }
 
-void win_bi::OnCreate(HWND hwnd) 
+void win_bi::OnCreate(HWND hwnd)
 {
     SetTimer(hwnd, 1, 1000, NULL);
     SetTimer(hwnd, 2, 10000, NULL);
@@ -265,7 +308,6 @@ void win_bi::OnCreate(HWND hwnd)
 
 void win_bi::OnCommand(WPARAM wParam)
 {
-
 }
 
 void win_bi::OnResize(WPARAM wParam)
@@ -285,28 +327,28 @@ void win_bi::OnResize(WPARAM wParam)
 
 void win_bi::UpdateOverlayText()
 {
-    if (ov_bi) 
+    if (ov_bi)
     {
         ru_bi->updateAll();
 
         std::string newText;
-        
+
         // CPU Info
         if (ru_bi->cpuInfo.show_cpuName)
             newText += "CPU Name: " + ru_bi->cpuInfo.cpuName + "\n";
-            
+
         if (ru_bi->cpuInfo.show_architecture)
             newText += "Architecture: " + ru_bi->cpuInfo.architecture + "\n";
-            
+
         if (ru_bi->cpuInfo.show_UsagePercent)
             newText += "\nCPU Usage: " + ru_bi->cpuInfo.UsagePercent + "\n";
-            
+
         if (ru_bi->cpuInfo.show_CoreUsagePercents)
         {
             for (size_t i = 0; i < ru_bi->cpuInfo.CoreUsagePercents.size(); ++i)
             {
-                newText += "Core " + std::to_string(i + 1) + ": " + 
-                          ru_bi->cpuInfo.CoreUsagePercents[i] + "\n";
+                newText += "Core " + std::to_string(i + 1) + ": " +
+                           ru_bi->cpuInfo.CoreUsagePercents[i] + "\n";
             }
         }
 
@@ -349,20 +391,20 @@ void win_bi::UpdateOverlayText()
             newText += "Time Remaining: " + bi_bi->info_10s.TimeRemaining + "\n";
 
         // Disk Info
-        for (const auto& disk : ru_bi->disksInfo)
+        for (const auto &disk : ru_bi->disksInfo)
         {
             if (disk.show_diskLetter)
                 newText += "\nDrive: " + disk.diskLetter + "\n";
-                
+
             if (disk.show_totalSpace)
                 newText += "Total Space: " + disk.totalSpace + "\n";
-                
+
             if (disk.show_freeSpace)
                 newText += "Free Space: " + disk.freeSpace + "\n";
-                
+
             if (disk.show_usedSpace)
                 newText += "Used Space: " + disk.usedSpace + "\n";
-                
+
             if (disk.show_usagePercent)
                 newText += "Usage: " + disk.usagePercent + "\n";
         }
@@ -372,10 +414,10 @@ void win_bi::UpdateOverlayText()
         // {
         //     if (net.show_interfaceName)
         //         newText += "\nInterface: " + net.interfaceName + "\n";
-                
+
         //     if (net.show_downloadSpeed)
         //         newText += "Download: " + net.downloadSpeed + "\n";
-                
+
         //     if (net.show_uploadSpeed)
         //         newText += "Upload: " + net.uploadSpeed + "\n";
         // }
@@ -397,7 +439,6 @@ void win_bi::OnKeyDown(WPARAM wParam)
 
 void win_bi::OnKeyUp(WPARAM wParam)
 {
-
 }
 
 void win_bi::OnMouseMove(WPARAM wParam, LPARAM lParam)
@@ -409,12 +450,12 @@ void win_bi::OnMouseMove(WPARAM wParam, LPARAM lParam)
 void win_bi::OnMouseWheel(WPARAM wParam, LPARAM lParam)
 {
     short delta = GET_WHEEL_DELTA_WPARAM(wParam);
-    
-    if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::SETTINGS)
+
+    if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::SETTINGS && ov_bi->show_on_screen_display == true)
     {
         draw_bibi_bi->scrollOffsetY -= delta * 0.2f;
 
-        if (draw_bibi_bi->scrollOffsetY < 0) 
+        if (draw_bibi_bi->scrollOffsetY < 0)
             draw_bibi_bi->scrollOffsetY = 0;
         if (draw_bibi_bi->scrollOffsetY > draw_bibi_bi->contentHeight - draw_bibi_bi->viewHeight)
             draw_bibi_bi->scrollOffsetY = draw_bibi_bi->contentHeight - draw_bibi_bi->viewHeight;
@@ -425,68 +466,100 @@ void win_bi::OnMouseWheel(WPARAM wParam, LPARAM lParam)
 
 void win_bi::OnLeftButtonDown(WPARAM wParam, LPARAM lParam)
 {
-    if (draw_bibi_bi->isCursorInBatteryStatus(pt)) 
+    // Отримуємо координати кліка в клієнтських координатах
+    POINT click;
+    click.x = GET_X_LPARAM(lParam);
+    click.y = GET_Y_LPARAM(lParam);
+
+    if (draw_bibi_bi->isCursorInBatteryStatus(click))
     {
         draw_bibi_bi->selectedTab = draw_batteryinfo_bi::BATTERY_INFO;
         InvalidateRect(hwnd, nullptr, TRUE);
+        return;
     }
-    if (draw_bibi_bi->isCursorInSettings(pt)) 
+    if (draw_bibi_bi->isCursorInSettings(click))
     {
         draw_bibi_bi->selectedTab = draw_batteryinfo_bi::SETTINGS;
         InvalidateRect(hwnd, nullptr, TRUE);
+        return;
     }
-    if (draw_bibi_bi->isCursorInAboutMe(pt))
+    if (draw_bibi_bi->isCursorInAboutMe(click))
     {
         draw_bibi_bi->selectedTab = draw_batteryinfo_bi::ABOUT_ME;
         InvalidateRect(hwnd, nullptr, TRUE);
+        return;
+    }
+    if (draw_bibi_bi->isCursorInAppearance(click))
+    {
+        draw_bibi_bi->selectedTab = draw_batteryinfo_bi::APPEARANCE;
+        InvalidateRect(hwnd, nullptr, TRUE);
+        return;
     }
 
-    if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::SETTINGS && 
-        draw_bibi_bi->handleSwitchClick(pt)) 
+    // Якщо ми на вкладці SETTINGS — обробляємо тумблери
+    if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::SETTINGS)
     {
-        InvalidateRect(hwnd, nullptr, TRUE);
+        if (draw_bibi_bi->handleSwitchClick(click))
+        {
+            InvalidateRect(hwnd, nullptr, TRUE);
+            return;
+        }
+    }
+
+    // Якщо ми на вкладці APPEARANCE — обробляємо кліки по тумблерам/квадратиках палітри
+    if (draw_bibi_bi->selectedTab == draw_batteryinfo_bi::APPEARANCE)
+    {
+        if (draw_bibi_bi->handleAppearanceClick(click))
+        {
+            // Оновлюємо кисті, щоб зміни відобразилися миттєво
+            ID2D1HwndRenderTarget *pRT = initd2d1_bi->GetOrCreateRenderTarget(hwnd);
+            if (pRT)
+            {
+                draw_bibi_bi->updateBrushes(pRT);
+            }
+            InvalidateRect(hwnd, nullptr, TRUE);
+            return;
+        }
     }
 }
 
 void win_bi::OnRightButtonDown(WPARAM wParam, LPARAM lParam)
 {
-
 }
 
 void win_bi::OnTimer(WPARAM wParam)
 {
-    if (!bi_bi) return;
+    if (!bi_bi)
+        return;
 
     switch (wParam)
     {
-        case 1:
-            bi_bi->QueryBatteryInfo();
-            bi_bi->QueryBatteryStatus();
-            // bi_bi->QueryCpuInfo();
-            // bi_bi->QueryRamInfo();
-            UpdateTrayTooltip();
+    case 1:
+        bi_bi->QueryBatteryInfo();
+        bi_bi->QueryBatteryStatus();
+        // bi_bi->QueryCpuInfo();
+        // bi_bi->QueryRamInfo();
+        UpdateTrayTooltip();
 
-            if (ov_bi->show_on_screen_display == true)
-                UpdateOverlayText();
+        if (ov_bi->show_on_screen_display == true)
+            UpdateOverlayText();
 
-            InvalidateRect(hwnd, NULL, true);
-            break;
+        InvalidateRect(hwnd, NULL, true);
+        break;
 
-        case 2:
-            bi_bi->QueryBatteryRemaining();
-            InvalidateRect(hwnd, NULL, true);
-            break;
+    case 2:
+        bi_bi->QueryBatteryRemaining();
+        InvalidateRect(hwnd, NULL, true);
+        break;
     }
 }
 
 void win_bi::OnSetFocus(HWND hwnd)
 {
-
 }
 
 void win_bi::OnKillFocus(HWND hwnd)
 {
-
 }
 
 void win_bi::OnSysCommand(WPARAM wParam, LPARAM lParam)
@@ -496,13 +569,12 @@ void win_bi::OnSysCommand(WPARAM wParam, LPARAM lParam)
 
 void win_bi::OnChar(WPARAM wParam)
 {
-    
 }
 
-void win_bi::OnGetMinMaxInfo(LPARAM lParam) 
+void win_bi::OnGetMinMaxInfo(LPARAM lParam)
 {
-    MINMAXINFO* mmi = (MINMAXINFO*)lParam;
-    mmi->ptMinTrackSize.x = 350;
+    MINMAXINFO *mmi = (MINMAXINFO *)lParam;
+    mmi->ptMinTrackSize.x = 550;
     mmi->ptMinTrackSize.y = 750;
 }
 
@@ -518,7 +590,7 @@ void win_bi::OnClose()
         DestroyWindow(hwnd);
 }
 
-void win_bi::OnDestroy() 
+void win_bi::OnDestroy()
 {
     ru_bi->cleanup();
     draw_bibi_bi->~draw_batteryinfo_bi();
@@ -530,15 +602,15 @@ void win_bi::OnDestroy()
     PostQuitMessage(0);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     win_bi mainWindow(hInstance);
-    if (!mainWindow.Register() || !mainWindow.Create(nCmdShow)) 
+    if (!mainWindow.Register() || !mainWindow.Create(nCmdShow))
     {
         return 0;
     }
 
-    if (mainWindow.ru_bi && mainWindow.ru_bi->start_With_Windows) 
+    if (mainWindow.ru_bi && mainWindow.ru_bi->start_With_Windows)
     {
         mainWindow.ru_bi->enableStartWithWindows();
     }
